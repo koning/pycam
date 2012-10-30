@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 $Id$
@@ -620,8 +619,8 @@ class ProjectGui(object):
         self.plugin_manager.import_plugins()
         # some more initialization
         self.reset_preferences()
-        # TODO: preferences are not loaded until the new format is stable
-        #self.load_preferences()
+        self.load_preferences()
+        # TODO: task settings are not loaded until the new format is stable
         #self.load_task_settings()
         self.settings.register_event("notify-file-saved",
                 self.add_to_recent_file_list)
@@ -831,8 +830,7 @@ class ProjectGui(object):
         self.quit()
 
     def quit(self):
-        # TODO: disabled until the format is stable
-        #self.save_preferences()
+        self.save_preferences()
         pass
 
     def configure_drag_and_drop(self, obj):
