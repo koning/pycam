@@ -81,3 +81,17 @@ If you plan to use PyCAM only in batch mode (without a graphical user
 interface), then you just need to install Python.
 See the manpage (man pycam) or the output of "pycam --help" for further defails.
 
+
+Running PyCAM in development mode
+---------------------------------
+
+Python's setuptools make it easy to run PyCAM out of the source
+directory while developing.  To set up development mod, from a UNIX
+shell, cd into the source directory and type:
+
+export PYTHONPATH="`pwd`/build"
+./setup.py develop --install-dir="`pwd`/build"
+
+Then you may run pycam with your current changes at any time:
+
+build/pycam
