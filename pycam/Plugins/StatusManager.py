@@ -153,7 +153,11 @@ class StatusManager(pycam.Plugins.PluginBase):
         # from the pycam executable, so look for a default file
         if filename is None:
             filename = self.core.get("default_task_settings_file")
-            _log.info("filename: %s" % str(filename))
+            # Project.py defaults and preference file saves '' for None
+            if filename == '':
+                filename = None
+            else:
+                _log.info("filename: '%s'" % str(filename))
         if not filename is None:
             _log.info("Loading task settings file: %s" % str(filename))
             settings.load_file(filename)
