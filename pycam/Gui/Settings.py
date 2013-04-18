@@ -49,6 +49,8 @@ def get_config_dirname():
         try:
             os.makedirs(config_dir)
         except OSError:
+            log.info("Failed to create configuration directory:  %s" %
+                     config_dir)
             config_dir = None
     return config_dir
 
@@ -366,6 +368,11 @@ process: 3
         self.config.readfp(config_text)
 
     def load_file(self, filename):
+        # If filename is empty, urllib will print a meaningless error
+        # about no ftp hostname given
+        if not filename:
+            return False
+        log.debug("Loading config file '%s'" % filename)
         uri = pycam.Utils.URIHandler(filename)
         try:
             handle = uri.open()

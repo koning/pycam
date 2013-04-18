@@ -783,6 +783,8 @@ class ProjectGui(object):
         config = ConfigParser.ConfigParser()
         if not config.read(config_filename):
             # no config file was read
+            log.info("Failed to read configuration file '%s'" %
+                     config_filename)
             return
         # report any ignored (obsolete) preference keys present in the file
         for item, value in config.items("DEFAULT"):
@@ -802,6 +804,8 @@ class ProjectGui(object):
                 # parse tuples, integers, bools, ...
                 value = eval(value_raw)
             self.settings.set(item, value)
+        log.debug("Loaded configuration file '%s'" %
+                  config_filename)
 
     def save_preferences(self):
         """ save all settings that are available in the Preferences window to
@@ -819,6 +823,8 @@ class ProjectGui(object):
             config_file = file(config_filename, "w")
             config.write(config_file)
             config_file.close()
+            log.debug("Saved configuration file '%s'" %
+                      config_filename)
         except IOError, err_msg:
             log.warn("Failed to write preferences file (%s): %s" % (config_filename, err_msg))
 
@@ -827,12 +833,18 @@ class ProjectGui(object):
         smplugin = self.plugin_manager.get_plugin('StatusManager')
         smplugin.load_task_settings(filename)
 
+    def save_task_settings(self,filename=None):
+        """ Save task settings from the StatusManager plugin """
+        smplugin = self.plugin_manager.get_plugin('StatusManager')
+        smplugin.save_task_settings(filename)
+
     def destroy(self, widget=None, data=None):
         gtk.main_quit()
         self.quit()
 
     def quit(self):
         self.save_preferences()
+        self.save_task_settings()
         pass
 
     def configure_drag_drop_func(self, obj):

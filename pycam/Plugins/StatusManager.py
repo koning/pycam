@@ -161,6 +161,8 @@ class StatusManager(pycam.Plugins.PluginBase):
         if not filename is None:
             _log.info("Loading task settings file: %s" % str(filename))
             settings.load_file(filename)
+        else:
+            _log.debug("No task settings file defined; not loading")
 
         # flush all tables (without re-assigning new objects)
         for one_list_name in ("tool_settings", "process_settings", "bounds"):
@@ -168,6 +170,12 @@ class StatusManager(pycam.Plugins.PluginBase):
             while one_list:
                 one_list.pop()
         # TODO: load default tools/processes/bounds
+
+    def save_task_settings(self, filename=None):
+        settings = pycam.Gui.Settings.ProcessSettings()
+
+        # FIXME:  not implemented
+        _log.warning("Save task settings function not implemented")
 
     def dump_state(self):
         result = []
