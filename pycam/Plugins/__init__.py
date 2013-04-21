@@ -87,7 +87,7 @@ class PluginBase(object):
         self._func_cache = {}
         self._gtk_handler_id_cache = []
         self.enabled = True
-        self._state_items = []
+        self._state_items = {}
 
     def register_core_methods(self):
         """
@@ -114,31 +114,33 @@ class PluginBase(object):
             self.core.set(name, None)
 
     def register_state_item(self, path, get_func, set_func=None):
-        group = (path, get_func, set_func)
-        if group in self._state_items:
-            self.log.debug("Trying to register a state item twice: %s" % \
-                    path)
+        if self._state_items.has_key(path):
+            self.log.debug(
+                "Module %s trying to register a state item twice: %s" % \
+                    (self.name, path))
         else:
-            self._state_items.append(group)
+            self._state_items[path] = (get_func, set_func)
 
     def clear_state_items(self):
-        self._state_items = []
+        self._state_items = {}
 
     def unregister_state_item(self, path, get_func, set_func=None):
-        group = (path, get_func, set_func)
-        if group in self._state_items:
-            self._state_items.remove(group)
+        if self._state_items.has_key(path):
+            del(self._state_items.remove[path])
         else:
-            self.log.debug("Trying to unregister an unknown state item: %s" % \
-                    path)
+            self.log.debug(
+                    "Module %s trying to unregister " \
+                        "an unknown state item: %s" % \
+                        (self.name, path))
 
-    def dump_state(self, result):
-        for path, get_func, set_func in self._state_items:
-            if callable(get_func):
-                value = get_func()
-            else:
-                value = get_func
-            result.append((path, value))
+    def dump_state(self):
+        result = {}
+        for path in self._state_items:
+            value = self._state_items[path][0]
+            if callable(value):
+                value = value()
+            result[path] = value
+        return result
 
     def __get_handler_func(self, func, params=None):
         if params is None:

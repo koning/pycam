@@ -20,6 +20,8 @@ You should have received a copy of the GNU General Public License
 along with PyCAM.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+# FIXME:  these belong in a persistence module; see below
+#import os
 import xml.etree.ElementTree as ET
 
 import pycam.Utils.log
@@ -177,28 +179,30 @@ class StatusManager(pycam.Plugins.PluginBase):
         # FIXME:  not implemented
         _log.warning("Save task settings function not implemented")
 
-    def dump_state(self):
-        result = []
-        for plugin in self.core.get("plugin-manager").get_plugins():
+    def dump_all_state(self):
+        result = {}
+        for plugin in self.core.plugin_manager.get_plugins():
             if plugin.enabled:
-                plugin.dump_state(result)
-        root = ET.Element("pycam")
-        for match, element in result:
-            chain = match.split("/")
-            if not hasattr(element, "findtext"):
-                # not an instance of ET.Element
-                element = _get_xml(element, chain[-1])
-            parent = root
-            if match:
-                for component in chain[:-1]:
-                    next_item = parent.find(component)
-                    if not next_item is None:
-                        parent = next_item
-                    else:
-                        item = ET.SubElement(parent, component)
-                        parent = item
-            parent.append(element)
-        return os.linesep.join(_get_xml_lines(root))
+                result.update(plugin.dump_state())
+        return result
+        # FIXME:  these belong in a persistence module
+        # root = ET.Element("pycam")
+        # for match, element in result:
+        #     chain = match.split("/")
+        #     if not hasattr(element, "findtext"):
+        #         # not an instance of ET.Element
+        #         element = _get_xml(element, chain[-1])
+        #     parent = root
+        #     if match:
+        #         for component in chain[:-1]:
+        #             next_item = parent.find(component)
+        #             if not next_item is None:
+        #                 parent = next_item
+        #             else:
+        #                 item = ET.SubElement(parent, component)
+        #                 parent = item
+        #     parent.append(element)
+        # return os.linesep.join(_get_xml_lines(root))
 
 
 def _get_xml(item, name=None):
