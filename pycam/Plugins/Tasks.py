@@ -122,7 +122,7 @@ class Tasks(pycam.Plugins.ListPluginBase):
             self._update_table()
             self._task_switch()
             self._trigger_table_update()
-        self.register_state_item("tasks", self)
+        self.register_state_item("task-settings", "tasks", self)
         self.core.set("tasks", self)
         return True
 

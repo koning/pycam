@@ -219,7 +219,7 @@ class OpenGLWindow(pycam.Plugins.PluginBase):
             for name in ("view_light", "view_shadow", "view_polygon",
                     "view_perspective", "opengl_cache_enable",
                     "drill_progress_max_fps"):
-                self.register_state_item("settings/view/opengl/%s" % name,
+                self.register_state_item("gui-settings", "view/opengl/%s" % name,
                         *get_get_set_functions(name))
         return True
 
@@ -282,7 +282,7 @@ class OpenGLWindow(pycam.Plugins.PluginBase):
         self.core.add_item(name, action.get_active, action.set_active)
         self._rebuild_display_items()
         # add this item to the state handler
-        self.register_state_item("settings/view/items/%s" % name,
+        self.register_state_item("gui-settings", "view/items/%s" % name,
                 action.get_active, action.set_active)
 
     def unregister_display_item(self, name):
@@ -291,7 +291,7 @@ class OpenGLWindow(pycam.Plugins.PluginBase):
                     name)
             return
         action = self._display_items[name]["action"]
-        self.unregister_state_item(name, action.get_active, action.set_active)
+        self.unregister_state_item("gui-settings", name)
         del self._display_items[name]
         self._rebuild_display_items()
 
@@ -340,7 +340,7 @@ class OpenGLWindow(pycam.Plugins.PluginBase):
         widget.connect("color-set", lambda widget: \
                 self.core.emit_event("visual-item-updated"))
         self.core.add_item(name, *wrappers)
-        self.register_state_item("settings/view/colors/%s" % name, *wrappers)
+        self.register_state_item("gui-settings", "view/colors/%s" % name, *wrappers)
         self._rebuild_color_settings()
 
     def unregister_color(self, name):
@@ -348,7 +348,7 @@ class OpenGLWindow(pycam.Plugins.PluginBase):
             self.log.debug("Failed to unregister unknown color item: %s" % name)
             return
         wrappers = self._color_settings[name]["wrappers"]
-        self.unregister_state_item(name, *wrappers)
+        self.unregister_state_item("gui-settings", name)
         del self._color_settings[name]
         self._rebuild_color_settings()
     

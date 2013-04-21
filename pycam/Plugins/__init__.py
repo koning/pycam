@@ -87,7 +87,7 @@ class PluginBase(object):
         self._func_cache = {}
         self._gtk_handler_id_cache = []
         self.enabled = True
-        self._state_items = {}
+        self.clear_state_items()
 
     def register_core_methods(self):
         """
@@ -113,33 +113,46 @@ class PluginBase(object):
             # (looked like: self.core.set("foo_func", None) )
             self.core.set(name, None)
 
-    def register_state_item(self, path, get_func, set_func=None):
-        if self._state_items.has_key(path):
+    def register_state_item(self, section, path, get_func, set_func=None):
+        if not self._state_items.has_key(section):
+            self.log.error("No such section '%s' in state items" % section)
+            raise KeyError
+        if self._state_items[section].has_key(path):
             self.log.debug(
-                "Module %s trying to register a state item twice: %s" % \
-                    (self.name, path))
+                "Module %s trying to register %s state item '%s' twice" % \
+                    (self.name, section, path))
         else:
-            self._state_items[path] = (get_func, set_func)
+            self._state_items[section][path] = (get_func, set_func)
 
     def clear_state_items(self):
-        self._state_items = {}
+        self._state_items = {"gui-settings" : {},
+                             "task-settings" : {}}
 
-    def unregister_state_item(self, path, get_func, set_func=None):
-        if self._state_items.has_key(path):
-            del(self._state_items.remove[path])
+    def unregister_state_item(self, section, path):
+        if not self._state_items.has_key(section):
+            self.log.error("No such section '%s' in state items" % section)
+            raise KeyError
+        if self._state_items[section].has_key(path):
+            del(self._state_items[section].remove[path])
         else:
             self.log.debug(
                     "Module %s trying to unregister " \
-                        "an unknown state item: %s" % \
-                        (self.name, path))
+                        "unknown %s state item '%s'" % \
+                        (self.name, section, path))
 
     def dump_state(self):
-        result = {}
-        for path in self._state_items:
-            value = self._state_items[path][0]
-            if callable(value):
-                value = value()
-            result[path] = value
+        result = {"gui-settings" : {},
+                  "task-settings" : {}}
+        for section in self._state_items:
+            for path in self._state_items[section]:
+                value = self._state_items[section][path][0]
+                if callable(value):
+                    value = value()
+                if not result.has_key(section):
+                    self.log.error("No such section '%s' in state items" %
+                                   section)
+                    raise KeyError
+                result[section][path] = value
         return result
 
     def __get_handler_func(self, func, params=None):

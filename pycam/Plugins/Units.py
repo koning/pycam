@@ -58,8 +58,9 @@ class Units(pycam.Plugins.PluginBase):
                     (self.unit_change_window, "delete_event",
                         self.change_unit_apply, False)))
             self.register_gtk_handlers(self._gtk_handlers)
-        self.register_state_item("settings/unit", lambda: self.core.get("unit"),
-                lambda value: self.core.set("unit", value))
+        self.register_state_item("gui-settings", "unit",
+                                 lambda: self.core.get("unit"),
+                                 lambda value: self.core.set("unit", value))
         return True
 
     def teardown(self):

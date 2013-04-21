@@ -133,7 +133,7 @@ class Bounds(pycam.Plugins.ListPluginBase):
             self._update_model_list()
         self._event_handlers.append(("bounds-changed", "visual-item-updated"))
         self.register_event_handlers(self._event_handlers)
-        self.register_state_item("bounds-list", self)
+        self.register_state_item("task-settings", "bounds-list", self)
         self.core.register_namespace("bounds",
                 pycam.Plugins.get_filter(self))
         return True

@@ -89,7 +89,7 @@ class StatusManager(pycam.Plugins.PluginBase):
             self.core.add_item("default_task_settings_file",
                     get_autoload_task_file, set_autoload_task_file)
         self.register_state_item(
-            "settings/default_task_settings_file",
+            "gui-settings", "default_task_settings_file",
             self.core.getclosure("default_task_settings_file"),
             self.core.setclosure("default_task_settings_file"))
         return True
@@ -180,10 +180,13 @@ class StatusManager(pycam.Plugins.PluginBase):
         _log.warning("Save task settings function not implemented")
 
     def dump_all_state(self):
-        result = {}
+        result = {"gui-settings" : {},
+                  "task-settings" : {}}
         for plugin in self.core.plugin_manager.get_plugins():
             if plugin.enabled:
-                result.update(plugin.dump_state())
+                plugin_state = plugin.dump_state()
+                for section in plugin_state:
+                    result[section].update(plugin.dump_state()[section])
         return result
         # FIXME:  these belong in a persistence module
         # root = ET.Element("pycam")

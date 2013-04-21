@@ -97,7 +97,7 @@ class Processes(pycam.Plugins.ListPluginBase):
                     ("process-strategy-changed", self._store_process_settings))
             self.register_gtk_handlers(self._gtk_handlers)
             self.register_event_handlers(self._event_handlers)
-        self.register_state_item("processes", self)
+        self.register_state_item("task-settings", "processes", self)
         self.core.register_namespace("processes",
                 pycam.Plugins.get_filter(self))
         return True
