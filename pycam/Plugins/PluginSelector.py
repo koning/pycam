@@ -99,7 +99,7 @@ class PluginSelector(pycam.Plugins.PluginBase):
         return True
 
     def _filter_set_visible(self, model, m_iter):
-        manager = self.core.get("plugin-manager")
+        manager = self.core.plugin_manager
         status_filter = self.gui.get_object("StatusFilter")
         status_index = status_filter.get_active()
         if status_index > 0:
@@ -136,7 +136,7 @@ class PluginSelector(pycam.Plugins.PluginBase):
         return True
 
     def _update_plugin_model(self):
-        manager = self.core.get("plugin-manager")
+        manager = self.core.plugin_manager
         names = manager.get_plugin_names()
         model = self._treemodel
         model.clear()
@@ -192,7 +192,7 @@ class PluginSelector(pycam.Plugins.PluginBase):
     def toggle_plugin_state(self, cell, path):
         filter_model = self.gui.get_object("PluginsTable").get_model()
         plugin_name = filter_model[int(path)][self.COLUMN_NAME]
-        manager = self.core.get("plugin-manager")
+        manager = self.core.plugin_manager
         enabled = manager.get_plugin_state(plugin_name)
         if enabled:
             manager.disable_plugin(plugin_name)

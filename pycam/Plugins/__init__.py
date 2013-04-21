@@ -237,7 +237,7 @@ class PluginManager(object):
     def __init__(self, core):
         self.core = core
         self.modules = {}
-        self.core.set("plugin-manager", self)
+        self.core.addmethod("plugin_manager", self)
 
     def import_plugins(self, directory=None):
         if directory is None:
