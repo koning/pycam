@@ -148,6 +148,12 @@ class PluginBase(object):
                 value = self._state_items[section][path][0]
                 if callable(value):
                     value = value()
+                if isinstance(value, ListPluginBase):
+                    # don't bother storing empty lists
+                    if not list(value):
+                        continue
+                    # make things easy for generic serializers
+                    value = [dict(i) for i in value]
                 if not result.has_key(section):
                     self.log.error("No such section '%s' in state items" %
                                    section)

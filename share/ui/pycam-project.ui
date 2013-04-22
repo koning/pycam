@@ -25,19 +25,6 @@
   <object class="GtkAction" id="SettingsMenu">
     <property name="label">_Settings</property>
   </object>
-  <object class="GtkAction" id="LoadTaskSettings">
-    <property name="label">_Load Task Settings ...</property>
-    <property name="tooltip">Load tool, process and task definitions from a file.</property>
-  </object>
-  <object class="GtkAction" id="SaveTaskSettings">
-    <property name="label">_Save Task Settings</property>
-    <property name="tooltip">Save the tool, process and task definitions.</property>
-    <property name="stock_id">gtk-save-as</property>
-  </object>
-  <object class="GtkAction" id="SaveAsTaskSettings">
-    <property name="label">Save Task Settings _as ...</property>
-    <property name="tooltip">Save the tool, process and task definitions to a new file.</property>
-  </object>
   <object class="GtkAction" id="GeneralSettings">
     <property name="label">_Preferences</property>
     <property name="tooltip">Configure PyCAM</property>
@@ -109,47 +96,6 @@
                             <property name="position">0</property>
                           </packing>
                         </child>
-			<!--
-                        <child>
-                          <object class="GtkVBox" id="TaskSettingsDefaultFileBox">
-                            <property name="visible">True</property>
-                            <property name="orientation">vertical</property>
-                            <child>
-                              <object class="GtkCheckButton" id="AutoLoadTaskFile">
-                                <property name="label" translatable="yes">Load custom task settings on startup</property>
-                                <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="receives_default">False</property>
-                                <property name="draw_indicator">True</property>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="position">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkAlignment" id="StartupTaskFileBox">
-                                <property name="visible">True</property>
-                                <property name="left_padding">20</property>
-                                <child>
-                                  <object class="GtkFileChooserButton" id="StartupTaskFile">
-                                    <property name="visible">True</property>
-                                    <property name="title" translatable="yes">Choose custom task settings file loading on startup</property>
-                                  </object>
-                                </child>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-			-->
                       </object>
                     </child>
                   </object>

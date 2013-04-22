@@ -12,10 +12,7 @@
       <separator />
     </menu>
     <menu action="SettingsMenu">
-      <menuitem action="LoadTaskSettings"/>
-      <menuitem action="SaveTaskSettings"/>
-      <menuitem action="SaveAsTaskSettings"/>
-      <separator />
+      <placeholder name="SettingsMenuItems"/>
       <menuitem action="GeneralSettings"/>
     </menu>
     <menu action="ViewMenu" />

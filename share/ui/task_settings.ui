@@ -2,6 +2,19 @@
 <interface>
   <!-- interface-requires gtk+ 2.12 -->
   <!-- interface-naming-policy project-wide -->
+  <object class="GtkAction" id="LoadTaskSettings">
+    <property name="label">_Load Task Settings ...</property>
+    <property name="tooltip">Load tool, process and task definitions from a file.</property>
+  </object>
+  <object class="GtkAction" id="SaveTaskSettings">
+    <property name="label">_Save Task Settings</property>
+    <property name="tooltip">Save the tool, process and task definitions.</property>
+    <property name="stock_id">gtk-save-as</property>
+  </object>
+  <object class="GtkAction" id="SaveAsTaskSettings">
+    <property name="label">Save Task Settings _as ...</property>
+    <property name="tooltip">Save the tool, process and task definitions to a new file.</property>
+  </object>
   <object class="GtkVBox" id="TaskSettingsDefaultFileBox">
     <property name="visible">True</property>
     <property name="orientation">vertical</property>

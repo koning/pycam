@@ -1,0 +1,12 @@
+<ui>
+  <menubar name="MenuBar">
+    <menu action="SettingsMenu">
+      <placeholder name="SettingsMenuItems">
+	<menuitem action="LoadTaskSettings"/>
+	<menuitem action="SaveTaskSettings"/>
+	<menuitem action="SaveAsTaskSettings"/>
+	<separator />
+      </placeholder>
+    </menu>
+  </menubar>
+</ui>

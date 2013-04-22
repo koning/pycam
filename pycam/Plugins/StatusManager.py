@@ -20,13 +20,14 @@ You should have received a copy of the GNU General Public License
 along with PyCAM.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-# FIXME:  these belong in a persistence module; see below
-#import os
-import xml.etree.ElementTree as ET
+import yaml
+# FIXME this needs to go into PluginBase class; see below
+import gtk
 
 import pycam.Utils.log
 import pycam.Plugins
 from pycam.Gui.Project import FILTER_CONFIG
+from pycam.Utils.locations import get_ui_file_location
 
 _log = pycam.Utils.log.get_logger()
 
@@ -46,6 +47,7 @@ class StatusManager(pycam.Plugins.PluginBase):
 
     UI_FILE = "task_settings.ui"
     CATEGORIES = ["System"]
+    GTKMENU_FILE = "task_settings_ui.xml"
 
     def setup(self):
         self._types = {}
@@ -88,6 +90,30 @@ class StatusManager(pycam.Plugins.PluginBase):
                     autoload_box)
             self.core.add_item("default_task_settings_file",
                     get_autoload_task_file, set_autoload_task_file)
+            # Settings menu items
+            # FIXME This stuff REALLY needs to go into the PluginBase class
+            self.last_task_settings_uri = None
+            actiongroup = gtk.ActionGroup("task_settings")
+            for objname, callback, accel_key, data in (
+                ("LoadTaskSettings", self.load_task_settings_file, None, \
+                     None),
+                ("SaveTaskSettings", self.save_task_settings_file, None, \
+                     None),
+                ("SaveAsTaskSettings", self.save_as_task_settings_file, None, \
+                     None),
+                ):
+                item = self.gui.get_object(objname)
+                action = "activate"
+                if data is None:
+                    item.connect(action, callback)
+                else:
+                    item.connect(action, callback, data)
+                actiongroup.add_action(item)
+            uimanager = self.core.get("gtk-uimanager")
+            uimanager.insert_action_group(actiongroup, pos=-1)
+            gtkmenu_file = get_ui_file_location(self.GTKMENU_FILE)
+            self.ui_merge_menus = uimanager.add_ui_from_file(gtkmenu_file)
+            
         self.register_state_item(
             "gui-settings", "default_task_settings_file",
             self.core.getclosure("default_task_settings_file"),
@@ -99,6 +125,7 @@ class StatusManager(pycam.Plugins.PluginBase):
         if self.gui:
             self.core.unregister_ui("preferences_general",
                                     "TaskSettingsDefaultFileBox")
+            self.core.get("gtk-uimanager").remove_ui(self.ui_merge_menus)
 
     def open_task_settings_file(self, filename):
         """ This function is used by the commandline handler """
@@ -122,31 +149,36 @@ class StatusManager(pycam.Plugins.PluginBase):
             self.load_task_settings(filename)
             self.core.add_to_recent_file_list(filename)
 
-    def save_task_settings_file(self, widget=None, filename=None):
+    def save_as_task_settings_file(self, widget=None, filename=None,
+                                   dialog_unless_filename=False):
         if callable(filename):
             filename = filename()
-        if not isinstance(filename, (basestring, pycam.Utils.URIHandler)):
+        if not isinstance(filename, (basestring, pycam.Utils.URIHandler)) \
+                and not (filename and dialog_unless_filename):
             # we open a dialog
             filename = self.core.get_filename_func(
                 "Save settings to ...",
                 mode_load=False,
                 type_filter=FILTER_CONFIG,
-                filename_templates=(self.last_task_settings_uri,
-                                    self.last_model_uri))
+                filename_templates=(self.last_task_settings_uri))
             if filename:
                 self.last_task_settings_uri = pycam.Utils.URIHandler(filename)
         # no filename given -> exit
         if not filename:
             return
-        settings = self.core.dump_state()
         try:
             out_file = open(filename, "w")
-            out_file.write(settings)
+            out_file.write(self.dump_task_settings())
             out_file.close()
             _log.info("Task settings written to %s" % filename)
             self.core.add_to_recent_file_list(filename)
         except IOError:
-            log.error("Failed to save settings file")
+            _log.error("Failed to save settings file")
+
+    def save_task_settings_file(self, widget=None, filename=None):
+        if filename is None:
+            filename = self.last_task_settings_uri
+        self.save_as_task_settings_file(widget, filename, True)
 
     def load_task_settings(self, filename=None):
         settings = pycam.Gui.Settings.ProcessSettings()
@@ -179,7 +211,7 @@ class StatusManager(pycam.Plugins.PluginBase):
         # FIXME:  not implemented
         _log.warning("Save task settings function not implemented")
 
-    def dump_all_state(self):
+    def gather_all_state(self):
         result = {"gui-settings" : {},
                   "task-settings" : {}}
         for plugin in self.core.plugin_manager.get_plugins():
@@ -188,71 +220,9 @@ class StatusManager(pycam.Plugins.PluginBase):
                 for section in plugin_state:
                     result[section].update(plugin.dump_state()[section])
         return result
-        # FIXME:  these belong in a persistence module
-        # root = ET.Element("pycam")
-        # for match, element in result:
-        #     chain = match.split("/")
-        #     if not hasattr(element, "findtext"):
-        #         # not an instance of ET.Element
-        #         element = _get_xml(element, chain[-1])
-        #     parent = root
-        #     if match:
-        #         for component in chain[:-1]:
-        #             next_item = parent.find(component)
-        #             if not next_item is None:
-        #                 parent = next_item
-        #             else:
-        #                 item = ET.SubElement(parent, component)
-        #                 parent = item
-        #     parent.append(element)
-        # return os.linesep.join(_get_xml_lines(root))
 
-
-def _get_xml(item, name=None):
-    if name is None:
-        if hasattr(item, "node_key"):
-            name = item.node_key
-        else:
-            name = "value"
-    if isinstance(item, (list, tuple, set)):
-        leaf = ET.Element(name)
-        leaf.attrib["type"] = str(type(item))
-        for single in item:
-            leaf.append(_get_xml(single))
-        return leaf
-    elif isinstance(item, dict):
-        leaf = ET.Element(name)
-        leaf.attrib["type"] = "dict"
-        for key, value in item.iteritems():
-            leaf.append(_get_xml(value, name=key))
-        return leaf
-    else:
-        leaf = ET.Element(name)
-        leaf.text = str(item)
-        leaf.attrib["type"] = str(type(item))
-        return leaf
-
-
-def _get_xml_lines(item):
-    lines = []
-    content = ET.tostring(item)
-    content = content.replace("><", ">\n<")
-    indent = 0
-    for line in content.split("\n"):
-        indented = False
-        if line.startswith("</"):
-            indent -= 2
-            indented = True
-        lines.append(" " * indent + line)
-        if indented:
-            pass
-        elif line.endswith("/>"):
-            pass
-        elif line.startswith("</"):
-            indent -= 2
-        elif "</" in line:
-            pass
-        else:
-            indent += 2
-    return lines
-
+    def dump_task_settings(self):
+        state = self.gather_all_state()
+        serialized_state = yaml.safe_dump(state["task-settings"],
+                                          default_flow_style=False)
+        return serialized_state
