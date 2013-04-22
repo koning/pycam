@@ -141,6 +141,11 @@ class Tasks(pycam.Plugins.ListPluginBase):
         while len(self) > 0:
             self.pop()
 
+    def dump_state(self):
+        # For now, we're not saving tasks.
+        return {"gui-settings" : {},
+                "task-settings" : {}}
+
     def _edit_task_name(self, cell, path, new_text):
         task = self.get_by_path(path)
         if task and (new_text != task["name"]) and new_text:
@@ -348,3 +353,15 @@ class TaskEntity(pycam.Plugins.ObjectWithAttributes):
     def __init__(self, parameters):
         super(TaskEntity, self).__init__("task", parameters)
 
+    def serializable(self):
+        """ Make a simple dict copy of self to simplify pickling """
+        dict_copy = self.copy()
+        # 'parameters' contains pointers to other FooEntity objects
+        # which also need to be serializable
+        dict_copy['parameters'] = self['parameters'].copy()
+        for key in dict_copy['parameters']:
+            if isinstance(dict_copy['parameters'][key],
+                          pycam.Plugins.ObjectWithAttributes):
+                dict_copy['parameters'][key] = \
+                    dict_copy['parameters'][key].serializable()
+        return dict_copy

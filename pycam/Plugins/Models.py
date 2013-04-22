@@ -103,6 +103,11 @@ class Models(pycam.Plugins.ListPluginBase):
             self.pop()
         return True
 
+    def dump_state(self):
+        # For now, we're not saving tasks.
+        return {"gui-settings" : {},
+                "task-settings" : {}}
+
     def _get_colors_of_selected_models(self, widget=None):
         color_button = self.gui.get_object("ModelColorButton")
         models = self.get_selected()

@@ -114,9 +114,6 @@ class PluginBase(object):
             self.core.set(name, None)
 
     def register_state_item(self, section, path, get_func, set_func=None):
-        if not self._state_items.has_key(section):
-            self.log.error("No such section '%s' in state items" % section)
-            raise KeyError
         if self._state_items[section].has_key(path):
             self.log.debug(
                 "Module %s trying to register %s state item '%s' twice" % \
@@ -141,24 +138,16 @@ class PluginBase(object):
                         (self.name, section, path))
 
     def dump_state(self):
+        # We're making an assumption here:
+        # Regular PluginBase objects needing to persist state are
+        # saving gui settings; ListPluginBase objects are different
         result = {"gui-settings" : {},
                   "task-settings" : {}}
-        for section in self._state_items:
-            for path in self._state_items[section]:
-                value = self._state_items[section][path][0]
-                if callable(value):
-                    value = value()
-                if isinstance(value, ListPluginBase):
-                    # don't bother storing empty lists
-                    if not list(value):
-                        continue
-                    # make things easy for generic serializers
-                    value = [dict(i) for i in value]
-                if not result.has_key(section):
-                    self.log.error("No such section '%s' in state items" %
-                                   section)
-                    raise KeyError
-                result[section][path] = value
+        for path in self._state_items['gui-settings']:
+            value = self._state_items['gui-settings'][path][0]
+            if callable(value):
+                value = value()
+            result['gui-settings'][path] = value
         return result
 
     def __get_handler_func(self, func, params=None):
@@ -599,6 +588,28 @@ class ListPluginBase(PluginBase, list):
         # initialize the state of the button
         self._update_list_action_button_state(modelview, action, button)
 
+    def dump_state(self):
+        # We're making an assumption here:
+        # ListPluginBase objects needing to persist state are
+        # saving task settings
+        result = {"gui-settings" : {},
+                  "task-settings" : {}}
+        if not list(self):
+            # don't bother saving empty lists
+            return result
+        # create dict with serializable representations of objects in
+        # the FooEntities list; dict key is uuid until a more readable
+        # solution comes along
+        for path in self._state_items['task-settings']:
+            value = {}
+            for obj in self._state_items['task-settings'][path][0]:
+                obj = obj.serializable()
+                uuid = obj['uuid']
+                value[obj['uuid']] = obj
+                obj.pop('uuid')
+            result['task-settings'][path] = value
+        return result
+
 
 class ObjectWithAttributes(dict):
 
@@ -608,6 +619,11 @@ class ObjectWithAttributes(dict):
             self.update(attributes)
         self["uuid"] = str(uuid.uuid4())
         self.node_key = node_key
+        self.log = _log
+
+    def serializable(self):
+        """ Make a simple dict copy of self to simplify pickling """
+        return self.copy()
 
 
 def filter_list(items, *args, **kwargs):
