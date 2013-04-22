@@ -92,7 +92,7 @@ class StatusManager(pycam.Plugins.PluginBase):
                     get_autoload_task_file, set_autoload_task_file)
             # Settings menu items
             # FIXME This stuff REALLY needs to go into the PluginBase class
-            self.last_task_settings_uri = None
+            self.last_task_settings_file = None
             actiongroup = gtk.ActionGroup("task_settings")
             for objname, callback, accel_key, data in (
                 ("LoadTaskSettings", self.load_task_settings_file, None, \
@@ -129,7 +129,7 @@ class StatusManager(pycam.Plugins.PluginBase):
 
     def open_task_settings_file(self, filename):
         """ This function is used by the commandline handler """
-        self.last_task_settings_uri = pycam.Utils.URIHandler(filename)
+        self.last_task_settings_file = filename
         self.load_task_settings_file(filename=filename)
 
     def load_task_settings_file(self, widget=None, filename=None):
@@ -144,7 +144,7 @@ class StatusManager(pycam.Plugins.PluginBase):
             # file was loaded interactively, i.e. ignore the initial
             # task file loading.
             if filename:
-                self.last_task_settings_uri = pycam.Utils.URIHandler(filename)
+                self.last_task_settings_file = filename
         if filename:
             self.load_task_settings(filename)
             self.core.add_to_recent_file_list(filename)
@@ -160,9 +160,10 @@ class StatusManager(pycam.Plugins.PluginBase):
                 "Save settings to ...",
                 mode_load=False,
                 type_filter=FILTER_CONFIG,
-                filename_templates=(self.last_task_settings_uri))
+                filename_templates=[
+                    pycam.Utils.URIHandler(self.last_task_settings_file)])
             if filename:
-                self.last_task_settings_uri = pycam.Utils.URIHandler(filename)
+                self.last_task_settings_file = filename
         # no filename given -> exit
         if not filename:
             return
@@ -177,7 +178,7 @@ class StatusManager(pycam.Plugins.PluginBase):
 
     def save_task_settings_file(self, widget=None, filename=None):
         if filename is None:
-            filename = self.last_task_settings_uri
+            filename = self.last_task_settings_file
         self.save_as_task_settings_file(widget, filename, True)
 
     def load_task_settings(self, filename=None):
