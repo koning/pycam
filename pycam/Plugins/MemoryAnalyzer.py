@@ -30,8 +30,6 @@ import gobject
 import pycam.Plugins
 import pycam.Utils.log
 
-_log = pycam.Utils.log.get_logger()
-
 
 class MemoryAnalyzer(pycam.Plugins.PluginBase):
 

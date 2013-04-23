@@ -24,8 +24,6 @@ along with PyCAM.  If not, see <http://www.gnu.org/licenses/>.
 import pycam.Plugins
 import pycam.Utils.log
 
-_log = pycam.Utils.log.get_logger()
-
 
 class GCodeTouchOff(pycam.Plugins.PluginBase):
 
@@ -46,7 +44,8 @@ class GCodeTouchOff(pycam.Plugins.PluginBase):
 
     def setup(self):
         # TODO: fix the settings handler to fit into the common dict-model
-        _log.warn("The plugin 'GCodeTouchOff' is disabled for now - please ignore any related messages")
+        self.log.warn("The plugin 'GCodeTouchOff' is disabled for now - "
+                      "please ignore any related messages")
         return False
         if self.gui:
             self.box = self.gui.get_object("TouchOffBox")

@@ -27,8 +27,6 @@ import pycam.Utils.log
 import pycam.Toolpath.Filters as Filters
 from pycam.Toolpath import CORNER_STYLE_EXACT_PATH
 
-_log = pycam.Utils.log.get_logger()
-
 
 class ToolpathProcessors(pycam.Plugins.ListPluginBase):
 

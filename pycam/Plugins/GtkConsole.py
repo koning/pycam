@@ -30,8 +30,6 @@ import StringIO
 import pycam.Plugins
 import pycam.Utils.log
 
-_log = pycam.Utils.log.get_logger()
-
 
 class GtkConsole(pycam.Plugins.PluginBase):
 
