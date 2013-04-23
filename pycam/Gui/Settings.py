@@ -28,7 +28,6 @@ import pycam.Toolpath
 import ConfigParser
 import StringIO
 import os
-from exceptions import AttributeError
 
 CONFIG_DIR = "pycam"
 
