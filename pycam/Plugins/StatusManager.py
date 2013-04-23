@@ -65,11 +65,6 @@ class StatusManager(pycam.Plugins.PluginBase):
             #for one_filter in get_filters_from_list(FILTER_CONFIG):
             #    autoload_source.add_filter(one_filter)
             #    autoload_source.set_filter(one_filter)
-            def get_autoload_task_file(autoload_source=autoload_source):
-                if autoload_enable.get_active():
-                    return autoload_source.get_filename()
-                else:
-                    return ""
             def set_autoload_task_file(filename):
                 if filename:
                     autoload_enable.set_active(True)
@@ -89,7 +84,7 @@ class StatusManager(pycam.Plugins.PluginBase):
             autoload_enable.connect("toggled", autoload_enable_switched,
                     autoload_box)
             self.core.add_item("default_task_settings_file",
-                    get_autoload_task_file, set_autoload_task_file)
+                    None, set_autoload_task_file)
             # Settings menu items
             # FIXME This stuff REALLY needs to go into the PluginBase class
             self.last_task_settings_file = None

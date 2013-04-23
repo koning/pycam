@@ -831,6 +831,8 @@ class ProjectGui(object):
     def load_task_settings(self,filename=None):
         """ Load task settings from the StatusManager plugin """
         smplugin = self.plugin_manager.get_plugin('StatusManager')
+        if filename is None:
+            filename = self.settings.get("default_task_settings_file")
         smplugin.load_task_settings(filename)
 
     def save_task_settings(self,filename=None):
