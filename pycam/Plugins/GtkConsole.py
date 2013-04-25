@@ -53,19 +53,21 @@ class GtkConsole(pycam.Plugins.PluginBase):
             self._original_stdout = sys.stdout
             self._original_stdin = sys.stdin
             self._console_buffer = self.gui.get_object("ConsoleViewBuffer")
+            # disabling:  this kills the debug console
             # redirect the virtual console output to the window
-            sys.stdout = StringIO.StringIO()
+            # sys.stdout = StringIO.StringIO()
             def console_write(data):
                 self._console_buffer.insert(
                         self._console_buffer.get_end_iter(), data)
                 self._console_buffer.place_cursor(
                         self._console_buffer.get_end_iter())
             self._console.write  = console_write
-            # make sure that we are never waiting for input (e.g. "help()")
-            sys.stdin = StringIO.StringIO()
-            # multiprocessing has a bug regarding the handling of sys.stdin:
-            # see http://bugs.python.org/issue10174
-            sys.stdin.fileno = lambda: -1
+            # disabling:  this kills the debug console
+            # # make sure that we are never waiting for input (e.g. "help()")
+            # sys.stdin = StringIO.StringIO()
+            # # multiprocessing has a bug regarding the handling of sys.stdin:
+            # # see http://bugs.python.org/issue10174
+            # sys.stdin.fileno = lambda: -1
             self._clear_console()
             console_action = self.gui.get_object("ToggleConsoleWindow")
             self.register_gtk_accelerator("console", console_action, None,

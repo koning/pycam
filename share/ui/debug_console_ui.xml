@@ -1,0 +1,7 @@
+<ui>
+  <menubar name="MenuBar">
+    <menu action="ViewMenu">
+	<menuitem action="StartDebugConsole"/>
+    </menu>
+  </menubar>
+</ui>

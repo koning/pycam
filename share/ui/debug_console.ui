@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<interface>
+  <object class="GtkAction" id="StartDebugConsole">
+    <property name="label">Start Debug Console</property>
+    <property name="tooltip">Start interactive python shell on the console.</property>
+  </object>
+</interface>
