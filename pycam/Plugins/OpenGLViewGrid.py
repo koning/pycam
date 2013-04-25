@@ -31,6 +31,8 @@ class OpenGLViewGrid(pycam.Plugins.PluginBase):
     CATEGORIES = ["Visualization", "OpenGL"]
     MINOR_LINES = 5
     MAJOR_LINES = 1
+    PERSIST_GENERAL_PREFERENCES = \
+        { 'view' : { 'colors' : ["color_grid"] } }
 
     def setup(self):
         if self.gui:

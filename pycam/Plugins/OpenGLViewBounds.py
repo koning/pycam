@@ -27,6 +27,8 @@ class OpenGLViewBounds(pycam.Plugins.PluginBase):
 
     DEPENDS = ["OpenGLWindow", "Bounds"]
     CATEGORIES = ["Bounds", "Visualization", "OpenGL"]
+    PERSIST_GENERAL_PREFERENCES = \
+        { 'view' : { 'colors' : ["color_bounding_box"] } }
 
     def setup(self):
         import OpenGL.GL

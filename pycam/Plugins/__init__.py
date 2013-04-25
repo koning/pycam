@@ -43,6 +43,11 @@ class PluginBase(object):
     ICONS = {}
     ICON_SIZE = 23
     CORE_METHODS = []
+    # dicts with keys of self.core keys the plugin creates and needs saved,
+    # values a list of Settings keys to persist
+    # nested dicts can be used to structure data
+    PERSIST_TASK_SETTINGS = {}
+    PERSIST_GENERAL_PREFERENCES = {}
 
     def __init__(self, core, name):
         self.enabled = True
@@ -87,7 +92,6 @@ class PluginBase(object):
         self._func_cache = {}
         self._gtk_handler_id_cache = []
         self.enabled = True
-        self.clear_state_items()
 
     def register_core_methods(self):
         """
@@ -112,43 +116,6 @@ class PluginBase(object):
             # FIXME this is the deprecated old method
             # (looked like: self.core.set("foo_func", None) )
             self.core.set(name, None)
-
-    def register_state_item(self, section, path, get_func, set_func=None):
-        if self._state_items[section].has_key(path):
-            self.log.debug(
-                "Module %s trying to register %s state item '%s' twice" % \
-                    (self.name, section, path))
-        else:
-            self._state_items[section][path] = (get_func, set_func)
-
-    def clear_state_items(self):
-        self._state_items = {"gui-settings" : {},
-                             "task-settings" : {}}
-
-    def unregister_state_item(self, section, path):
-        if not self._state_items.has_key(section):
-            self.log.error("No such section '%s' in state items" % section)
-            raise KeyError
-        if self._state_items[section].has_key(path):
-            del(self._state_items[section].remove[path])
-        else:
-            self.log.debug(
-                    "Module %s trying to unregister " \
-                        "unknown %s state item '%s'" % \
-                        (self.name, section, path))
-
-    def dump_state(self):
-        # We're making an assumption here:
-        # Regular PluginBase objects needing to persist state are
-        # saving gui settings; ListPluginBase objects are different
-        result = {"gui-settings" : {},
-                  "task-settings" : {}}
-        for path in self._state_items['gui-settings']:
-            value = self._state_items['gui-settings'][path][0]
-            if callable(value):
-                value = value()
-            result['gui-settings'][path] = value
-        return result
 
     def __get_handler_func(self, func, params=None):
         if params is None:
@@ -239,6 +206,28 @@ class PluginBase(object):
                 self.core.get("gtk-uimanager").get_action_groups()):
             self.core.get("gtk-uimanager").remove_action_group(actiongroup)
 
+    def get_persist_data(self, what=None, src=None, result={}):
+        """
+        Return a dict of plugin data suitable for storing.
+        'what' should either be 'PERSIST_GENERAL_PREFERENCES' or
+        'PERSIST_TASK_SETTINGS'.
+        """
+        if src is None:
+            src = getattr(self,what)
+            if not src:
+                return {}
+        # Recurse through e.g. PERSIST_GENERAL_PREFERENCES, expanding
+        # lists of keys into dicts of key+values from self.core
+        for key, value in src.items():
+            result.setdefault(key,{})
+            if isinstance(value,list):
+                # list of keys to look up in self.core
+                for param in value:
+                    result[key][param] = self.core.get(param)
+            else:
+                # subdict to structure the data
+                result[key] = self.persist_data(what, src[key], result[key])
+        return result
 
 class PluginManager(object):
 
@@ -588,27 +577,17 @@ class ListPluginBase(PluginBase, list):
         # initialize the state of the button
         self._update_list_action_button_state(modelview, action, button)
 
-    def dump_state(self):
-        # We're making an assumption here:
-        # ListPluginBase objects needing to persist state are
-        # saving task settings
-        result = {"gui-settings" : {},
-                  "task-settings" : {}}
-        if not list(self):
-            # don't bother saving empty lists
-            return result
-        # create dict with serializable representations of objects in
-        # the FooEntities list; dict key is uuid until a more readable
-        # solution comes along
-        for path in self._state_items['task-settings']:
-            value = {}
-            for obj in self._state_items['task-settings'][path][0]:
-                obj = obj.serializable()
-                uuid = obj['uuid']
-                value[obj['uuid']] = obj
-                obj.pop('uuid')
-            result['task-settings'][path] = value
-        return result
+    def get_persist_data(self, what=None):
+        """
+        ListPluginBase objects subclass the list type, and elements
+        are ObjectWithAttributes objects (subclass dict).  These
+        object types can confuse picklers, so put the data in vanilla
+        python data structures.
+        """
+        if what is not 'PERSIST_TASK_SETTINGS':
+            # ListPluginBase only returns task settings, nothing else
+            return {}
+        return {self.name : [obj.get_persist_data() for obj in self]}
 
 
 class ObjectWithAttributes(dict):
@@ -621,8 +600,8 @@ class ObjectWithAttributes(dict):
         self.node_key = node_key
         self.log = _log
 
-    def serializable(self):
-        """ Make a simple dict copy of self to simplify pickling """
+    def get_persist_data(self):
+        """ Return a shallow dict copy of self to simplify pickling """
         return self.copy()
 
 

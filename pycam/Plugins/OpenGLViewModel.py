@@ -31,6 +31,8 @@ class OpenGLViewModel(pycam.Plugins.PluginBase):
 
     DEPENDS = ["OpenGLWindow", "Models"]
     CATEGORIES = ["Model", "Visualization", "OpenGL"]
+    PERSIST_GENERAL_PREFERENCES = \
+        { 'view' : { 'colors' : ["color_model"] } }
 
     def setup(self):
         import gtk

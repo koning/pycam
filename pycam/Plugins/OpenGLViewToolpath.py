@@ -30,6 +30,10 @@ class OpenGLViewToolpath(pycam.Plugins.PluginBase):
     DEPENDS = ["OpenGLWindow", "Toolpaths"]
     CATEGORIES = ["Toolpath", "Visualization", "OpenGL"]
     CORE_METHODS = ["draw_toolpath_moves_func"]
+    PERSIST_GENERAL_PREFERENCES = \
+        { 'view' : { 'colors' : ["color_toolpath_cut",
+                                 "color_toolpath_return",
+                                 ] } }
 
     def setup(self):
         import OpenGL.GL

@@ -86,11 +86,9 @@ class Models(pycam.Plugins.ListPluginBase):
         self.core.register_namespace("models",
                 pycam.Plugins.get_filter(self))
         self.core.set("models", self)
-        self.register_state_item("task-settings", "models", self)
         return True
 
     def teardown(self):
-        self.clear_state_items()
         self.core.unregister_namespace("models")
         if self.gui:
             self.core.unregister_ui_section("model_handling")

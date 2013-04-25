@@ -119,11 +119,9 @@ class Tools(pycam.Plugins.ListPluginBase):
                 self.get_toolpath_filters)
         self.core.register_namespace("tools",
                 pycam.Plugins.get_filter(self))
-        self.register_state_item("task-settings", "tools", self)
         return True
 
     def teardown(self):
-        self.clear_state_items()
         self.core.unregister_namespace("tools")
         self.core.unregister_chain("toolpath_filters",
                 self.get_toolpath_filters)

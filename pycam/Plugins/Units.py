@@ -27,6 +27,8 @@ class Units(pycam.Plugins.PluginBase):
 
     UI_FILE = "units.ui"
     CATEGORIES = ["System"]
+    PERSIST_GENERAL_PREFERENCES = \
+        {'general' : [ "unit" ]}
 
     def setup(self):
         if self.gui:
@@ -58,13 +60,9 @@ class Units(pycam.Plugins.PluginBase):
                     (self.unit_change_window, "delete_event",
                         self.change_unit_apply, False)))
             self.register_gtk_handlers(self._gtk_handlers)
-        self.register_state_item("gui-settings", "unit",
-                                 lambda: self.core.get("unit"),
-                                 lambda value: self.core.set("unit", value))
         return True
 
     def teardown(self):
-        self.clear_state_items()
         if self.gui:
             self.core.unregister_ui("preferences_general",
                     self.gui.get_object("UnitPrefBox"))

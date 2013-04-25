@@ -122,12 +122,10 @@ class Tasks(pycam.Plugins.ListPluginBase):
             self._update_table()
             self._task_switch()
             self._trigger_table_update()
-        self.register_state_item("task-settings", "tasks", self)
         self.core.set("tasks", self)
         return True
 
     def teardown(self):
-        self.clear_state_items()
         if self.gui:
             self.core.unregister_ui("main", self.gui.get_object("TaskBox"))
             self.core.unregister_ui("task_parameters",

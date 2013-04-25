@@ -27,6 +27,8 @@ class OpenGLViewSupportModelPreview(pycam.Plugins.PluginBase):
 
     DEPENDS = ["OpenGLWindow", "OpenGLViewModel"]
     CATEGORIES = ["Visualization", "OpenGL", "Support bridges"]
+    PERSIST_GENERAL_PREFERENCES = \
+        { 'view' : { 'colors' : ["color_support_preview"] } }
 
     def setup(self):
         import OpenGL.GL

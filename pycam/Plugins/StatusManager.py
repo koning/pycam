@@ -32,7 +32,7 @@ from pycam.Utils.locations import get_ui_file_location
 
 class StatusManager(pycam.Plugins.PluginBase):
     """
-    This class handles reading and writing task settings config files.
+    This class handles reading and writing all settings config files.
 
     Config files may be read under these conditions:
     - The '--config' switch is present on the command line
@@ -46,6 +46,8 @@ class StatusManager(pycam.Plugins.PluginBase):
     UI_FILE = "task_settings.ui"
     CATEGORIES = ["System"]
     GTKMENU_FILE = "task_settings_ui.xml"
+    PERSIST_GENERAL_PREFERENCES = \
+        {'general' : [ "default_task_settings_file" ]}
 
     def setup(self):
         self._types = {}
@@ -107,14 +109,9 @@ class StatusManager(pycam.Plugins.PluginBase):
             gtkmenu_file = get_ui_file_location(self.GTKMENU_FILE)
             self.ui_merge_menus = uimanager.add_ui_from_file(gtkmenu_file)
             
-        self.register_state_item(
-            "gui-settings", "default_task_settings_file",
-            self.core.getclosure("default_task_settings_file"),
-            self.core.setclosure("default_task_settings_file"))
         return True
 
     def teardown(self):
-        self.clear_state_items()
         if self.gui:
             self.core.unregister_ui("preferences_general",
                                     "TaskSettingsDefaultFileBox")
@@ -205,14 +202,25 @@ class StatusManager(pycam.Plugins.PluginBase):
         # FIXME:  not implemented
         self.log.warning("Save task settings function not implemented")
 
-    def gather_all_state(self):
-        result = {"gui-settings" : {},
-                  "task-settings" : {}}
+    def get_global_persist_data(self, what):
+        """
+        Return a dict of merged plugin data suitable for storing.
+        'what' should either be 'PERSIST_GENERAL_PREFERENCES' or
+        'PERSIST_TASK_SETTINGS'.
+        """
+        result = {}
         for plugin in self.core.plugin_manager.get_plugins():
             if plugin.enabled:
-                plugin_state = plugin.dump_state()
-                for section in plugin_state:
-                    result[section].update(plugin.dump_state()[section])
+                result = self._merge_state(result,
+                                           plugin.get_persist_data(what))
+        return result
+
+    def _merge_state(self, result, src):
+        for key, value in src.items():
+            if isinstance(value,dict):
+                result[key] = self._merge_state(result.get(key,{}), src[key])
+            else:
+                result[key] = src[key]
         return result
 
     def dump_task_settings(self):
