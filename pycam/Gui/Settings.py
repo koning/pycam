@@ -62,7 +62,6 @@ def get_config_filename(filename=None):
     else:
         return os.path.join(config_dir, filename)
 
-
 class Settings(dict):
 
     GET_INDEX = 0
@@ -89,20 +88,6 @@ class Settings(dict):
             return self.__getitem__(key)
         except KeyError:
             return default
-
-    def setclosure(self, key):
-        def c(value):
-            log.info("setclosure:  setting key %s to value %s" %
-                     (key,value))
-            self.set(key,value)
-        return c
-
-    def getclosure(self, key):
-        def c():
-            log.info("getting key %s: value %s" %
-                     (key,self.get(key)))
-            return self.get(key)
-        return c
 
     def define_get_func(self, key, get_func=None):
         if not self.has_key(key):
