@@ -27,6 +27,7 @@ import datetime
 import gtk
 import gobject
 import webbrowser
+import yaml
 import ConfigParser
 import StringIO
 import pickle
@@ -776,57 +777,63 @@ class ProjectGui(object):
     def load_preferences(self):
         """ load all settings that are available in the Preferences window from
         a file in the user's home directory """
+
+        # get config filename
         config_filename = pycam.Gui.Settings.get_config_filename()
         if config_filename is None:
             # failed to create the personal preferences directory
             return
-        config = ConfigParser.ConfigParser()
-        if not config.read(config_filename):
-            # no config file was read
-            log.info("Failed to read configuration file '%s'" %
-                     config_filename)
-            return
-        # report any ignored (obsolete) preference keys present in the file
-        for item, value in config.items("DEFAULT"):
-            if not item in PREFERENCES_DEFAULTS.keys():
-                log.warn("Skipping obsolete preference item: %s" % str(item))
-        for item in PREFERENCES_DEFAULTS.keys():
-            if not config.has_option("DEFAULT", item):
-                # a new preference setting is missing in the (old) file
-                continue
-            value_raw = config.get("DEFAULT", item)
-            old_value = self.settings.get(item)
-            value_type = type(PREFERENCES_DEFAULTS[item])
-            if isinstance(value_type(), basestring):
-                # keep strings as they are
-                value = str(value_raw)
-            else:
-                # parse tuples, integers, bools, ...
-                value = eval(value_raw)
-            self.settings.set(item, value)
-        log.debug("Loaded configuration file '%s'" %
-                  config_filename)
+
+        # read prefs from config file
+        try:
+            config_file = open(config_filename, "r")
+            serialized_data = config_file.read()
+            config_file.close()
+            log.debug("Read configuration file '%s'" %
+                      config_filename)
+        except IOError, err_msg:
+            log.warn("Failed to read preferences file (%s): %s" % \
+                         (config_filename, err_msg))
+
+        # read prefs from YAML format
+        prefs = yaml.safe_load(serialized_data)
+
+        # save prefs to plugins
+        status_manager = self.plugin_manager.get_plugin('StatusManager')
+        status_manager.set_global_general_preferences(prefs)
+
 
     def save_preferences(self):
         """ save all settings that are available in the Preferences window to
         a file in the user's home directory """
+
+        # get config filename
         config_filename = pycam.Gui.Settings.get_config_filename()
         if config_filename is None:
             # failed to create the personal preferences directory
             log.warn("Failed to create a preferences directory in " \
                     + "your user's home directory.")
             return
-        config = ConfigParser.ConfigParser()
-        for item in PREFERENCES_DEFAULTS.keys():
-            config.set("DEFAULT", item, self.settings.get(item))
+
+        # get prefs from plugins
+        status_manager = self.plugin_manager.get_plugin('StatusManager')
+        prefs = status_manager.get_global_general_preferences()
+
+        # serialize prefs into YAML format
+        serialized_data = yaml.safe_dump(prefs,
+                                         default_flow_style=False,
+                                         indent=4)
+
+        # save prefs into config file
         try:
-            config_file = file(config_filename, "w")
-            config.write(config_file)
+            config_file = open(config_filename, "w")
+            config_file.write(serialized_data)
             config_file.close()
             log.debug("Saved configuration file '%s'" %
                       config_filename)
         except IOError, err_msg:
-            log.warn("Failed to write preferences file (%s): %s" % (config_filename, err_msg))
+            log.warn("Failed to write preferences file (%s): %s" % \
+                         (config_filename, err_msg))
 
     def load_task_settings(self,filename=None):
         """ Load task settings from the StatusManager plugin """

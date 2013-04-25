@@ -226,8 +226,35 @@ class PluginBase(object):
                     result[key][param] = self.core.get(param)
             else:
                 # subdict to structure the data
-                result[key] = self.persist_data(what, src[key], result[key])
+                result[key] = self.get_persist_data(what, src[key], result[key])
         return result
+
+    def set_general_preferences(self, prefs, template=None):
+        """
+        Retrieve our settings from a PERSIST_GENERAL_PREFERENCES dict
+        """
+        if template is None:
+            if not self.PERSIST_GENERAL_PREFERENCES:
+                return
+            template = self.PERSIST_GENERAL_PREFERENCES
+        # recurse through the template
+        for key, value in template.items():
+            if isinstance(value,list):
+                # a list of keys to pull from prefs and set in self.core
+                for setting in value:
+                    if setting not in prefs[key]:
+                        self.log.warn(
+                            ("plugin %s expected non-existent key '%s' in "
+                             "preferences") % (self.name, setting))
+                        continue
+                    self.core.set(setting, prefs[key][setting])
+                    self.log.debug("plugin %s set self.core[%s] = %s" % \
+                                       (self.name, setting,
+                                        prefs[key][setting]))
+            else:
+                # recurse into structural dict
+                self.set_general_preferences(prefs[key], template[key])
+
 
 class PluginManager(object):
 

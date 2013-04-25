@@ -202,6 +202,12 @@ class StatusManager(pycam.Plugins.PluginBase):
         # FIXME:  not implemented
         self.log.warning("Save task settings function not implemented")
 
+    def get_global_general_preferences(self):
+        """
+        Return global preferences data
+        """
+        return self.get_global_persist_data('PERSIST_GENERAL_PREFERENCES')
+
     def get_global_persist_data(self, what):
         """
         Return a dict of merged plugin data suitable for storing.
@@ -228,3 +234,13 @@ class StatusManager(pycam.Plugins.PluginBase):
         serialized_state = yaml.safe_dump(state["task-settings"],
                                           default_flow_style=False)
         return serialized_state
+
+
+    def set_global_general_preferences(self,prefs):
+        """
+        Process a PERSIST_GENERAL_PREFERENCES dict
+        """
+        plugins = self.core.plugin_manager.get_plugins()
+        for plugin in plugins:
+            if plugin.enabled and plugin.PERSIST_GENERAL_PREFERENCES:
+                plugin.set_general_preferences(prefs)
