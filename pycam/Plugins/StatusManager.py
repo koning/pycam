@@ -28,6 +28,7 @@ import pycam.Utils.log
 import pycam.Plugins
 from pycam.Gui.Project import FILTER_CONFIG
 from pycam.Utils.locations import get_ui_file_location
+from pycam.Utils.Persistence import Persistence, PersistenceException
 
 
 class StatusManager(pycam.Plugins.PluginBase):
@@ -46,6 +47,10 @@ class StatusManager(pycam.Plugins.PluginBase):
     UI_FILE = "task_settings.ui"
     CATEGORIES = ["System"]
     GTKMENU_FILE = "task_settings_ui.xml"
+    CORE_METHODS = [
+        'load_general_preferences',
+        'save_general_preferences',
+        ]
     PERSIST_GENERAL_PREFERENCES = \
         {'general' : [ "default_task_settings_file" ]}
 
@@ -109,6 +114,8 @@ class StatusManager(pycam.Plugins.PluginBase):
             gtkmenu_file = get_ui_file_location(self.GTKMENU_FILE)
             self.ui_merge_menus = uimanager.add_ui_from_file(gtkmenu_file)
             
+        self.persistence = Persistence()
+        self.register_core_methods()
         return True
 
     def teardown(self):
@@ -116,6 +123,7 @@ class StatusManager(pycam.Plugins.PluginBase):
             self.core.unregister_ui("preferences_general",
                                     "TaskSettingsDefaultFileBox")
             self.core.get("gtk-uimanager").remove_ui(self.ui_merge_menus)
+        self.unregister_core_methods()
 
     def open_task_settings_file(self, filename):
         """ This function is used by the commandline handler """
@@ -176,7 +184,7 @@ class StatusManager(pycam.Plugins.PluginBase):
 
         # if filename is None, then we're probably being called from
         # from the pycam executable, so look for a default file
-        if filename is None:
+        if filename is None or filename == '':
             filename = self.core.get("default_task_settings_file")
             # Project.py defaults and preference file saves '' for None
             if filename == '':
@@ -244,3 +252,38 @@ class StatusManager(pycam.Plugins.PluginBase):
         for plugin in plugins:
             if plugin.enabled and plugin.PERSIST_GENERAL_PREFERENCES:
                 plugin.set_general_preferences(prefs)
+
+
+    def load_general_preferences(self):
+        """ load all settings that are available in the Preferences window from
+        a file in the user's home directory """
+
+        try:
+            prefs = self.persistence.load_preferences_file()
+        except PersistenceException, e:
+            # Problems loading the config file should be expected on
+            # occasion (like first time to start PyCAM).  Log as
+            # warning and return
+            log.warn(e.message)
+            return
+
+        # save prefs to plugins
+        self.set_global_general_preferences(prefs)
+
+
+    def save_general_preferences(self):
+        """ save all settings that are available in the Preferences window to
+        a file in the user's home directory """
+
+        # get prefs from plugins
+        prefs = self.get_global_general_preferences()
+
+        # write prefs to file
+        try:
+            self.persistence.save_preferences_file(prefs)
+        except PersistenceException, e:
+            # Problems saving the config may happen on occasion.  Log
+            # as error and return.
+            log.error(e.message)
+            return
+

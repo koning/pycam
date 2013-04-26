@@ -29,38 +29,8 @@ import ConfigParser
 import StringIO
 import os
 
-CONFIG_DIR = "pycam"
-
 log = pycam.Utils.log.get_logger()
 
-
-def get_config_dirname():
-    try:
-        from win32com.shell import shellcon, shell            
-        homedir = shell.SHGetFolderPath(0, shellcon.CSIDL_APPDATA, 0, 0)
-        config_dir = os.path.join(homedir, CONFIG_DIR)
-    except ImportError:
-        # quick semi-nasty fallback for non-windows/win32com case
-        homedir = os.path.expanduser("~")
-        # hide the config directory for unixes
-        config_dir = os.path.join(homedir, "." + CONFIG_DIR)
-    if not os.path.isdir(config_dir):
-        try:
-            os.makedirs(config_dir)
-        except OSError:
-            log.info("Failed to create configuration directory:  %s" %
-                     config_dir)
-            config_dir = None
-    return config_dir
-
-def get_config_filename(filename=None):
-    if filename is None:
-        filename = "preferences.conf"
-    config_dir = get_config_dirname()
-    if config_dir is None:
-        return None
-    else:
-        return os.path.join(config_dir, filename)
 
 class Settings(dict):
 

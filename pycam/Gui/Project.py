@@ -618,7 +618,7 @@ class ProjectGui(object):
         self.plugin_manager.import_plugins()
         # some more initialization
         self.reset_preferences()
-        self.load_preferences()
+        self.settings.load_general_preferences()
         self.load_task_settings()
         self.settings.register_event("notify-file-saved",
                 self.add_to_recent_file_list)
@@ -774,66 +774,6 @@ class ProjectGui(object):
         # redraw the model due to changed colors, display items ...
         self.settings.emit_event("model-change-after")
 
-    def load_preferences(self):
-        """ load all settings that are available in the Preferences window from
-        a file in the user's home directory """
-
-        # get config filename
-        config_filename = pycam.Gui.Settings.get_config_filename()
-        if config_filename is None:
-            # failed to create the personal preferences directory
-            return
-
-        # read prefs from config file
-        try:
-            config_file = open(config_filename, "r")
-            serialized_data = config_file.read()
-            config_file.close()
-            log.debug("Read configuration file '%s'" %
-                      config_filename)
-        except IOError, err_msg:
-            log.warn("Failed to read preferences file (%s): %s" % \
-                         (config_filename, err_msg))
-
-        # read prefs from YAML format
-        prefs = yaml.safe_load(serialized_data)
-
-        # save prefs to plugins
-        status_manager = self.plugin_manager.get_plugin('StatusManager')
-        status_manager.set_global_general_preferences(prefs)
-
-
-    def save_preferences(self):
-        """ save all settings that are available in the Preferences window to
-        a file in the user's home directory """
-
-        # get config filename
-        config_filename = pycam.Gui.Settings.get_config_filename()
-        if config_filename is None:
-            # failed to create the personal preferences directory
-            log.warn("Failed to create a preferences directory in " \
-                    + "your user's home directory.")
-            return
-
-        # get prefs from plugins
-        status_manager = self.plugin_manager.get_plugin('StatusManager')
-        prefs = status_manager.get_global_general_preferences()
-
-        # serialize prefs into YAML format
-        serialized_data = yaml.safe_dump(prefs,
-                                         default_flow_style=False,
-                                         indent=4)
-
-        # save prefs into config file
-        try:
-            config_file = open(config_filename, "w")
-            config_file.write(serialized_data)
-            config_file.close()
-            log.debug("Saved configuration file '%s'" %
-                      config_filename)
-        except IOError, err_msg:
-            log.warn("Failed to write preferences file (%s): %s" % \
-                         (config_filename, err_msg))
 
     def load_task_settings(self,filename=None):
         """ Load task settings from the StatusManager plugin """
@@ -852,7 +792,7 @@ class ProjectGui(object):
         self.quit()
 
     def quit(self):
-        self.save_preferences()
+        self.settings.save_general_preferences()
         self.save_task_settings()
         pass
 
