@@ -20,7 +20,7 @@ class Persistence(object):
 
     log = pycam.Utils.log.get_logger()
 
-    def get_config_dirname(self):
+    def get_preferences_dirname(self):
         try:
             from win32com.shell import shellcon, shell            
             homedir = shell.SHGetFolderPath(0, shellcon.CSIDL_APPDATA, 0, 0)
@@ -36,63 +36,109 @@ class Persistence(object):
             except OSError as e:
                 raise PersistenceException(
                     "Failed to create configuration directory '%s': "
-                    "OS error(%d): %s" % (config_dir, e.errno, e.strerror))
+                    "[Errno %d %s" % (config_dir, e.errno, e.strerror))
         return config_dir
 
-    def get_config_filename(self, filename=None):
+    def get_preferences_filename(self, filename=None):
         if filename is None:
             filename = self.CONFIG_FILENAME
 
-        config_dir = self.get_config_dirname()
+        config_dir = self.get_preferences_dirname()
         return os.path.join(config_dir, filename)
+
+    def load_file(self,filename):
+        """
+        Load a file, returning its contents as a string
+        """
+        try:
+            fileobj = open(filename, "r")
+            file_contents = fileobj.read()
+            fileobj.close()
+        except IOError as e:
+            raise PersistenceException("[Errno %d] %s" % (e.errno, e.strerror))
+
+        return file_contents
+
+
+    def save_file(self, filename, file_contents):
+        """
+        Save file_contents to filename
+        """
+        try:
+            file_obj = open(filename, "w")
+            file_obj.write(file_contents)
+            file_obj.close()
+        except IOError, e:
+            raise PersistenceException("[Errno %d] %s" % (e.errno, e.strerror))
+
+
+    def unserialize_data(self, serialized_data):
+        """
+        Given a generic python data structure, serialize with YAML
+        """
+        return yaml.safe_load(serialized_data)
+
+
+    def serialize_data(self, data, comment=''):
+        """
+        Given a generic python data structure, serialize with YAML
+        """
+        return (comment + 
+                yaml.safe_dump(data, default_flow_style=False, indent=4)
+                )
+
 
     def load_preferences_file(self):
         """
         Load the preferences file into a generic data structure for
         consumption by the StatusManager plugin
         """
-        # get config filename
-        config_filename = self.get_config_filename()
-
-        # read prefs from config file
+        # Get preferences filename
+        #     If this throws an exception, let it fail; user should
+        #     fix the problem.
         try:
-            config_file = open(config_filename, "r")
-            serialized_data = config_file.read()
-            config_file.close()
-            self.log.debug("Read configuration file '%s'" %
-                           config_filename)
-        except IOError as e:
-            raise PersistenceException(
-                "Failed to read preferences file '%s': IO error(%d):  %s" %
-                    (config_filename, e.errno, e.strerror))
+            preferences_filename = self.get_preferences_filename()
+            self.log.debug("Saved preferences file '%s'" % preferences_filename)
+        except IOError, e:
+            # Failed to write file; inform user
+            self.log.error("Failed to write preferences file '%s': %s" %
+                (preferences_filename, e.msg))
+            
 
-        # return prefs structure from YAML format
-        return yaml.safe_load(serialized_data)
+        # Read prefs from preferences file
+        try:
+            file_contents = self.load_file(preferences_filename)
+        except PersistenceException as e:
+            # Failed to create prefs dir; inform user
+            self.log.error(e.msg)
+            return
+
+        # Return prefs structure from YAML format
+        return self.unserialize_data(file_contents)
 
     def save_preferences_file(self, prefs):
         """
         Save the preferences file from a generic data structure
         provided by the StatusManager plugin
         """
-        # get config filename
-        config_filename = self.get_config_filename()
+        # Serialize prefs into YAML format
+        #    Add a comment at the beginning (with emacs mode id)
+        comment = '# PyCAM preferences file' + ' '*45 + '-*-yaml-*-\n'
+        serialized_prefs = self.serialize_data(prefs, comment=comment)
 
-        # serialize prefs into YAML format
-        # add a comment at the beginning (with emacs mode id)
-        comment = '# PyCAM preferences file' + ' '*56 + '-*-yaml-*-'
-        serialized_prefs = comment + \
-            yaml.safe_dump(prefs,
-                           default_flow_style=False,
-                           indent=4)
-
-        # save prefs into config file
+        # Get preferences filename
         try:
-            config_file = open(config_filename, "w")
-            config_file.write(serialized_prefs)
-            config_file.close()
-            self.log.debug("Saved configuration file '%s'" %
-                           config_filename)
+            preferences_filename = self.get_preferences_filename()
+        except PersistenceException, e:
+            # Failed to create prefs dir; inform user
+            self.log.error(e.msg)
+            return
+
+        # Save prefs into preferences file
+        try:
+            self.save_file(preferences_filename, serialized_prefs)
+            self.log.debug("Saved preferences file '%s'" % preferences_filename)
         except IOError, e:
-            raise PersistenceException(
-                "Failed to write preferences file '%s': IO error(%d) :  %s" %
-                (config_filename, e.errno, e.strerror))
+            # Failed to write file; inform user
+            self.log.error("Failed to write preferences file '%s': %s" %
+                (preferences_filename, e.msg))
