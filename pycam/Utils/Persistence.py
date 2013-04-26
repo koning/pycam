@@ -78,9 +78,12 @@ class Persistence(object):
         config_filename = self.get_config_filename()
 
         # serialize prefs into YAML format
-        serialized_prefs = yaml.safe_dump(prefs,
-                                          default_flow_style=False,
-                                          indent=4)
+        # add a comment at the beginning (with emacs mode id)
+        comment = '# PyCAM preferences file' + ' '*56 + '-*-yaml-*-'
+        serialized_prefs = comment + \
+            yaml.safe_dump(prefs,
+                           default_flow_style=False,
+                           indent=4)
 
         # save prefs into config file
         try:
