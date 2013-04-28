@@ -42,6 +42,7 @@ import pycam.Utils.log
 from pycam.Utils.locations import get_data_file_location, \
         get_ui_file_location, get_external_program_location, \
         get_all_program_locations
+from pycam.Utils.Persistence import MODEL_FILENAME_FILTER
 import pycam.Utils
 import pycam.Plugins
 from pycam import VERSION
@@ -55,12 +56,6 @@ PICKLE_PROTOCOL = 2
 WINDOW_ICON_FILENAMES = ["logo_%dpx.png" % pixels for pixels in (16, 32, 48, 64, 128)]
 
 HELP_WIKI_URL = "http://sourceforge.net/apps/mediawiki/pycam/index.php?title=%s"
-
-FILTER_MODEL = (("All supported model filetypes",
-                ("*.stl", "*.dxf", "*.svg", "*.eps", "*.ps")),
-        ("STL models", "*.stl"), ("DXF contours", "*.dxf"),
-        ("SVG contours", "*.svg"), ("PS contours", ("*.eps", "*.ps")))
-FILTER_CONFIG = (("Config files", "*.conf"),)
 
 PREFERENCES_DEFAULTS = {
         "enable_ode": False,
@@ -347,21 +342,6 @@ class ProjectGui(object):
         # show stock items on buttons
         # increase the initial width of the window (due to hidden elements)
         self.window.set_default_size(400, -1)
-        # initialize the RecentManager (TODO: check for Windows)
-        if False and pycam.Utils.get_platform() == pycam.Utils.PLATFORM_WINDOWS:
-            # The pyinstaller binary for Windows fails mysteriously when trying
-            # to display the stock item.
-            # Error message: Gtk:ERROR:gtkrecentmanager.c:1942:get_icon_fallback: assertion failed: (retval != NULL)
-            self.recent_manager = None
-        else:
-            try:
-                self.recent_manager = gtk.recent_manager_get_default()
-            except AttributeError:
-                # GTK 2.12.1 seems to have problems with "RecentManager" on
-                # Windows. Sadly this is the version, that is shipped with the
-                # "appunti" GTK packages for Windows (April 2010).
-                # see http://www.daa.com.au/pipermail/pygtk/2009-May/017052.html
-                self.recent_manager = None
         # file loading
         self.last_dirname = None
         self.last_task_settings_uri = None
@@ -546,35 +526,9 @@ class ProjectGui(object):
             actiongroup.add_action(action)
         # the "pos" parameter is optional since 2.12 - we can remove it later
         uimanager.insert_action_group(actiongroup, pos=-1)
-        # the "recent files" sub-menu
-        if not self.recent_manager is None:
-            recent_files_menu = gtk.RecentChooserMenu(self.recent_manager)
-            recent_files_menu.set_name("RecentFilesMenu")
-            recent_menu_filter = gtk.RecentFilter()
-            case_converter = pycam.Utils.get_case_insensitive_file_pattern
-            for filter_name, patterns in FILTER_MODEL:
-                if not isinstance(patterns, (list, set, tuple)):
-                    patterns = [patterns]
-                # convert it into a mutable list (instead of set/tuple)
-                patterns = list(patterns)
-                for index in range(len(patterns)):
-                    patterns[index] = case_converter(patterns[index])
-                for pattern in patterns:
-                    recent_menu_filter.add_pattern(pattern)
-            recent_files_menu.add_filter(recent_menu_filter)
-            recent_files_menu.set_show_numbers(True)
-            # non-local files (without "file://") are not supported. yet
-            recent_files_menu.set_local_only(False)
-            # most recent files to the top
-            recent_files_menu.set_sort_type(gtk.RECENT_SORT_MRU)
-            # show only ten files
-            recent_files_menu.set_limit(10)
-            uimanager.get_widget("/MenuBar/FileMenu/OpenRecentModelMenu")\
-                    .set_submenu(recent_files_menu)
-            recent_files_menu.connect("item-activated",
-                    self.load_recent_model_file)
-        else:
-            self.gui.get_object("OpenRecentModel").set_visible(False)
+
+
+
         # load the menubar and connect functions to its items
         self.menubar = uimanager.get_widget("/MenuBar")
         # dict of all merge-ids
@@ -619,11 +573,9 @@ class ProjectGui(object):
         # some more initialization
         self.reset_preferences()
         self.settings.load_general_preferences()
-        self.load_task_settings()
-        self.settings.register_event("notify-file-saved",
-                self.add_to_recent_file_list)
-        self.settings.register_event("notify-file-opened",
-                self.add_to_recent_file_list)
+        self.settings.load_task_settings_file(load_default=True)
+
+
         # fallback - in case of a failure when opening a model file
         model = pycam.Importers.TestModel.get_test_model()
         self.settings.get("models").add_model(model, "Tiny pyramid")
@@ -766,6 +718,7 @@ class ProjectGui(object):
         # don't close the window - just hide it (for "delete-event")
         return True
 
+    # FIXME this needs to go in StatusManager
     @gui_activity_guard
     def reset_preferences(self, widget=None):
         """ reset all preferences to their default values """
@@ -773,19 +726,8 @@ class ProjectGui(object):
             self.settings.set(key, value)
         # redraw the model due to changed colors, display items ...
         self.settings.emit_event("model-change-after")
+    #/FIXME
 
-
-    def load_task_settings(self,filename=None):
-        """ Load task settings from the StatusManager plugin """
-        smplugin = self.plugin_manager.get_plugin('StatusManager')
-        if filename is None:
-            filename = self.settings.get("default_task_settings_file")
-        smplugin.load_task_settings(filename)
-
-    def save_task_settings(self,filename=None):
-        """ Save task settings from the StatusManager plugin """
-        smplugin = self.plugin_manager.get_plugin('StatusManager')
-        smplugin.save_task_settings(filename)
 
     def destroy(self, widget=None, data=None):
         gtk.main_quit()
@@ -793,7 +735,7 @@ class ProjectGui(object):
 
     def quit(self):
         self.settings.save_general_preferences()
-        self.save_task_settings()
+        self.settings.save_task_settings_file(save_default=True)
         pass
 
     def configure_drag_drop_func(self, obj):
@@ -859,7 +801,7 @@ class ProjectGui(object):
                         callback=progress.update)):
                     if store_filename:
                         self.set_model_filename(filename)
-                    self.add_to_recent_file_list(filename)
+                    self.settings.add_to_recent_file_list(filename)
                     result = True
                 else:
                     result = False
@@ -886,23 +828,6 @@ class ProjectGui(object):
             return True
         else:
             return False
-
-    def add_to_recent_file_list(self, filename):
-        # Add the item to the recent files list - if it already exists.
-        # Otherwise it will be added later after writing the file.
-        uri = pycam.Utils.URIHandler(filename)
-        if uri.exists():
-            # skip this, if the recent manager is not available (e.g. GTK 2.12.1 on Windows)
-            if self.recent_manager:
-                if self.recent_manager.has_item(uri.get_url()):
-                    try:
-                        self.recent_manager.remove_item(uri.get_url())
-                    except gobject.GError:
-                        pass
-                self.recent_manager.add_item(uri.get_url())
-            # store the directory of the last loaded file
-            if uri.is_local():
-                self.last_dirname = os.path.dirname(uri.get_local_path())
 
     def get_meta_data(self):
         filename = "Filename: %s" % str(self.last_model_uri)

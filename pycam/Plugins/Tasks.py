@@ -28,11 +28,41 @@ from pycam.Exporters.GCodeExporter import GCodeGenerator
 from pycam.Utils import get_non_conflicting_name
 
 
+class TaskEntity(pycam.Plugins.ObjectWithAttributes):
+
+    def get_persist_data(self):
+        """ Return a copy with only generic types to simplify pickling """
+        dict_copy = self.copy()
+        # 'parameters' contains pointers to other FooEntity objects
+        # which also need to be serializable
+        dict_copy['parameters'] = self['parameters'].copy()
+        for key in dict_copy['parameters']:
+            if isinstance(dict_copy['parameters'][key],
+                          pycam.Plugins.ObjectWithAttributes):
+                dict_copy['parameters'][key] = \
+                    dict_copy['parameters'][key]['uuid']
+        return dict_copy
+
+    def unpersist(self,attributes):
+        """ Update attributes from dict """
+        super(TaskEntity, self).unpersist(attributes)
+        # Restore pointers to other Entity objects by uuid
+        for key, value in self['parameters'].items():
+            if isinstance(value,str):
+                # assume this is a uuid
+                entity = self._get_by_uuid(value)
+                if not entity:
+                    self.log.info("Unable to retrieve '%s' entity, uuid = %s" %
+                                  (key, value))
+                self['parameters'][key] = entity
+
+
 class Tasks(pycam.Plugins.ListPluginBase):
 
     UI_FILE = "tasks.ui"
     CATEGORIES = ["Task"]
     DEPENDS = ["Models", "Tools", "Processes", "Bounds", "Toolpaths"]
+    CHILD_ENTITY = TaskEntity
 
     def setup(self):
         if self.gui:
@@ -249,9 +279,11 @@ class Tasks(pycam.Plugins.ListPluginBase):
         one_type = types[0]
         name = get_non_conflicting_name("Task #%d",
                 [task["name"] for task in self])
-        new_task = TaskEntity({"type": one_type["name"],
-                "parameters": one_type["parameters"].copy(),
-                "name": name})
+        new_task = TaskEntity(
+            self.core,
+            attributes={"type": one_type["name"],
+                        "parameters": one_type["parameters"].copy(),
+                        "name": name})
         self.append(new_task)
         self.select(new_task)
 
@@ -339,22 +371,3 @@ class Tasks(pycam.Plugins.ListPluginBase):
         if not use_multi_progress:
             progress.finish()
         return result
-
-
-class TaskEntity(pycam.Plugins.ObjectWithAttributes):
-
-    def __init__(self, parameters):
-        super(TaskEntity, self).__init__("task", parameters)
-
-    def serializable(self):
-        """ Make a simple dict copy of self to simplify pickling """
-        dict_copy = self.copy()
-        # 'parameters' contains pointers to other FooEntity objects
-        # which also need to be serializable
-        dict_copy['parameters'] = self['parameters'].copy()
-        for key in dict_copy['parameters']:
-            if isinstance(dict_copy['parameters'][key],
-                          pycam.Plugins.ObjectWithAttributes):
-                dict_copy['parameters'][key] = \
-                    dict_copy['parameters'][key].serializable()
-        return dict_copy

@@ -24,11 +24,16 @@ import pycam.Plugins
 from pycam.Toolpath.Filters import toolpath_filter
 
 
+class ToolEntity(pycam.Plugins.ObjectWithAttributes):
+
+    node_key = 'Tool'
+
 class Tools(pycam.Plugins.ListPluginBase):
 
     DEPENDS = ["ParameterGroupManager"]
     CATEGORIES = ["Tool"]
     UI_FILE = "tools.ui"
+    CHILD_ENTITY = ToolEntity
 
     def setup(self):
         self.core.set("tools", self)
@@ -277,9 +282,10 @@ class Tools(pycam.Plugins.ListPluginBase):
         shapes.sort(key=lambda item: item["weight"])
         shape = shapes[0]
         tool_id, tool_name = self._get_new_tool_id_and_name()
-        new_tool = ToolEntity({"shape": shape["name"],
-                "parameters": shape["parameters"].copy(),
-                "id": tool_id, "name": tool_name})
+        new_tool = ToolEntity(
+            attributes ={"shape": shape["name"],
+                         "parameters": shape["parameters"].copy(),
+                         "id": tool_id, "name": tool_name})
         self.append(new_tool)
         self.select(new_tool)
 
@@ -287,9 +293,4 @@ class Tools(pycam.Plugins.ListPluginBase):
     def get_toolpath_filters(self, tool_id):
         return [pycam.Toolpath.Filters.SelectTool(tool_id)]
 
-
-class ToolEntity(pycam.Plugins.ObjectWithAttributes):
-
-    def __init__(self, parameters):
-        super(ToolEntity, self).__init__("tool", parameters)
 

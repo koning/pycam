@@ -1,0 +1,9 @@
+<ui>
+  <menubar name="MenuBar">
+    <menu action="FileMenu">
+      <placeholder name="FileMenuItems">
+	<menuitem action="OpenRecentModel" name="OpenRecentModelMenu"/>
+      </placeholder>
+    </menu>
+  </menubar>
+</ui>

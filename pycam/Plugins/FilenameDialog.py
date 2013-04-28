@@ -21,9 +21,13 @@ along with PyCAM.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import os
+import gtk
 
 import pycam.Plugins
 import pycam.Utils
+from pycam.Utils.Persistence import MODEL_FILENAME_FILTER
+from pycam.Utils.locations import get_ui_file_location
+from pycam.Utils import URIHandler
 
 
 def _get_filters_from_list(filter_list):
@@ -65,6 +69,111 @@ def _get_filename_with_suffix(filename, type_filter):
         return filename
 
 
+class RecentManager(pycam.Plugins.PluginBase):
+    UI_FILE = "recent_model_builder.xml"
+    GTKMENU_FILE = "recent_model_ui.xml"
+    CATEGORIES = [ 'System' ]
+    CORE_METHODS = [ 'add_to_recent_file_list' ]
+
+    def setup(self):
+        if self.gui:
+            # initialize the RecentManager (TODO: check for Windows)
+            if False and pycam.Utils.get_platform() == \
+                    pycam.Utils.PLATFORM_WINDOWS:
+                # The pyinstaller binary for Windows fails mysteriously
+                # when trying to display the stock item.
+                #
+                # Error message:
+                #   Gtk:ERROR:gtkrecentmanager.c:1942:get_icon_fallback:
+                #   assertion failed: (retval != NULL)
+                self.recent_manager = None
+            else:
+                try:
+                    self.recent_manager = gtk.recent_manager_get_default()
+                except AttributeError:
+                    # GTK 2.12.1 seems to have problems with
+                    # "RecentManager" on Windows. Sadly this is the
+                    # version, that is shipped with the "appunti" GTK
+                    # packages for Windows (April 2010).  see
+                    # http://www.daa.com.au/pipermail/pygtk/2009-May/017052.html
+                    self.recent_manager = None
+
+            uimanager = self.core.get("gtk-uimanager")
+            gtkmenu_file = get_ui_file_location(self.GTKMENU_FILE)
+            self.log.debug('gtkmenu_file:  %s' % gtkmenu_file)
+            self.ui_merge_id = uimanager.add_ui_from_file(gtkmenu_file)
+
+
+            # the "recent files" sub-menu
+            if self.recent_manager is not None:
+                recent_files_menu = gtk.RecentChooserMenu(self.recent_manager)
+                recent_files_menu.set_name("RecentFilesMenu")
+                recent_menu_filter = gtk.RecentFilter()
+                case_converter = pycam.Utils.get_case_insensitive_file_pattern
+                for filter_name, patterns in MODEL_FILENAME_FILTER:
+                    if not isinstance(patterns, (list, set, tuple)):
+                        patterns = [patterns]
+                    # convert it into a mutable list (instead of set/tuple)
+                    patterns = list(patterns)
+                    for index in range(len(patterns)):
+                        patterns[index] = case_converter(patterns[index])
+                    for pattern in patterns:
+                        recent_menu_filter.add_pattern(pattern)
+                recent_files_menu.add_filter(recent_menu_filter)
+                recent_files_menu.set_show_numbers(True)
+                # non-local files (without "file://") are not supported. yet
+                recent_files_menu.set_local_only(False)
+                # most recent files to the top
+                recent_files_menu.set_sort_type(gtk.RECENT_SORT_MRU)
+                # show only ten files
+                recent_files_menu.set_limit(10)
+
+
+                # uimanager.get_widget(
+                #     "/MenuBar/FileMenu/OpenRecentModelMenu")\
+                #     .set_submenu(recent_files_menu)
+                # recent_files_menu.connect("item-activated",
+                #         self.load_recent_model_file)
+            else:
+                self.gui.get_object("OpenRecentModel").set_visible(False)
+
+
+            self.core.register_event("notify-file-saved",
+                                     self.add_to_recent_file_list)
+            self.core.register_event("notify-file-opened",
+                                     self.add_to_recent_file_list)
+
+        self.register_core_methods()
+
+    def teardown(self):
+        if self.gui:
+            self.core.get("gtk-uimanager").remove_ui(self.ui_merge_id)
+            self.core.unregister_event("notify-file-saved",
+                                       self.add_to_recent_file_list)
+            self.core.unregister_event("notify-file-opened",
+                                       self.add_to_recent_file_list)
+        self.unregister_core_methods()
+
+    def add_to_recent_file_list(self, filename):
+        # Add the item to the recent files list - if it already exists.
+        # Otherwise it will be added later after writing the file.
+        uri = pycam.Utils.URIHandler(filename)
+        if uri.exists():
+            # skip this, if the recent manager is not available
+            # (e.g. GTK 2.12.1 on Windows)
+            if self.recent_manager:
+                if self.recent_manager.has_item(uri.get_url()):
+                    try:
+                        self.recent_manager.remove_item(uri.get_url())
+                    except gobject.GError:
+                        pass
+                self.recent_manager.add_item(uri.get_url())
+            # store the directory of the last loaded file
+            if uri.is_local():
+                self.last_dirname = os.path.dirname(uri.get_local_path())
+
+
+
 class FilenameDialog(pycam.Plugins.PluginBase):
 
     CATEGORIES = ["System"]
@@ -76,6 +185,8 @@ class FilenameDialog(pycam.Plugins.PluginBase):
         self.last_dirname = None
         self.register_core_methods()
         return True
+
+
 
     def teardown(self):
         self.unregister_core_methods()
@@ -111,10 +222,12 @@ class FilenameDialog(pycam.Plugins.PluginBase):
         # guess the export filename based on the model's filename
         valid_templates = []
         if filename_templates:
+            if not isinstance(filename_templates, (list,tuple)):
+                filename_templates = [filename_templates]
             for template in filename_templates:
                 if not template:
                     continue
-                elif hasattr(template, "get_path"):
+                if hasattr(template, "get_path"):
                     valid_templates.append(template.get_path())
                 else:
                     valid_templates.append(template)

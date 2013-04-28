@@ -24,6 +24,7 @@ import os
 import imp
 import inspect
 import uuid
+import copy
 # TODO: load these modules only on demand
 import gtk
 import gobject
@@ -206,19 +207,19 @@ class PluginBase(object):
                 self.core.get("gtk-uimanager").get_action_groups()):
             self.core.get("gtk-uimanager").remove_action_group(actiongroup)
 
-    def get_persist_data(self, what=None, src=None, result={}):
+    def get_persist_data(self, what=None, result={}, template=None):
         """
         Return a dict of plugin data suitable for storing.
         'what' should either be 'PERSIST_GENERAL_PREFERENCES' or
         'PERSIST_TASK_SETTINGS'.
         """
-        if src is None:
-            src = getattr(self,what)
-            if not src:
+        if template is None:
+            template = getattr(self,what,None)
+            if not template:
                 return {}
         # Recurse through e.g. PERSIST_GENERAL_PREFERENCES, expanding
         # lists of keys into dicts of key+values from self.core
-        for key, value in src.items():
+        for key, value in template.items():
             result.setdefault(key,{})
             if isinstance(value,list):
                 # list of keys to look up in self.core
@@ -226,34 +227,35 @@ class PluginBase(object):
                     result[key][param] = self.core.get(param)
             else:
                 # subdict to structure the data
-                result[key] = self.get_persist_data(what, src[key], result[key])
+                result[key] = self.get_persist_data(what, result[key],
+                                                    template[key])
         return result
 
-    def set_general_preferences(self, prefs, template=None):
+    def set_persist_data(self, what, data, template=None):
         """
-        Retrieve our settings from a PERSIST_GENERAL_PREFERENCES dict
+        Retrieve our settings from the template dict
         """
         if template is None:
-            if not self.PERSIST_GENERAL_PREFERENCES:
+            template = getattr(self,what)
+            if not template:
                 return
-            template = self.PERSIST_GENERAL_PREFERENCES
         # recurse through the template
         for key, value in template.items():
             if isinstance(value,list):
-                # a list of keys to pull from prefs and set in self.core
+                # a list of keys to pull from data and set in self.core
                 for setting in value:
-                    if setting not in prefs[key]:
+                    if setting not in data[key]:
                         self.log.warn(
                             ("plugin %s expected non-existent key '%s' in "
                              "preferences") % (self.name, setting))
                         continue
-                    self.core.set(setting, prefs[key][setting])
+                    self.core.set(setting, data[key][setting])
                     self.log.debug("plugin %s set self.core[%s] = %s" % \
                                        (self.name, setting,
-                                        prefs[key][setting]))
+                                        data[key][setting]))
             else:
                 # recurse into structural dict
-                self.set_general_preferences(prefs[key], template[key])
+                self.set_persist_data(what, data[key], template[key])
 
 
 class PluginManager(object):
@@ -294,6 +296,7 @@ class PluginManager(object):
                                 mod_filename)[0:-len(".py")], attr)
                         plugins.append((item, mod_filename, attr))
         try_again = True
+        dep_order = 0
         while try_again:
             try_again = False
             postponed_plugins = []
@@ -306,6 +309,10 @@ class PluginManager(object):
                         break
                 else:
                     self._load_plugin(plugin, filename, name)
+                    if name in self.modules:
+                        # load succeeded; record dependency order
+                        self.modules[name].dep_order = dep_order
+                        dep_order += 1
                     try_again = True
             plugins = postponed_plugins
         for plugin, filename, name in plugins:
@@ -319,6 +326,23 @@ class PluginManager(object):
                     missing.append(depend)
             _log.info("Skipping plugin '%s' due to missing dependencies: %s" % \
                     (name, ", ".join(missing)))
+
+    def get_plugins_sorted(self, plist=None):
+        """
+        Return list of plugins sorted in dependency order.
+
+        If plist is a list of plugin names, return those plugins sorted.
+        """
+        # make our own copy
+        if plist is None:
+            plugins = list(self.get_plugins())
+        else:
+            # list of names
+            plugins = [self.modules[p] for p in plist if p in self.modules]
+        # return list sorted by dependency order
+        plugins.sort(cmp=lambda x,y: cmp(x.dep_order, y.dep_order))
+        return plugins
+
 
     def _load_plugin(self, obj, filename, plugin_name):
         if plugin_name in self.modules:
@@ -403,6 +427,7 @@ class PluginManager(object):
 
 class ListPluginBase(PluginBase, list):
 
+    CHILD_ENTITY = None
     ACTION_UP, ACTION_DOWN, ACTION_DELETE, ACTION_CLEAR = range(4)
 
     def __init__(self, *args, **kwargs):
@@ -420,6 +445,12 @@ class ListPluginBase(PluginBase, list):
         value = getattr(super(ListPluginBase, self), func_name)(*args, **kwargs)
         self._update_model()
         return value
+
+    @classmethod
+    def new(myclass, value_list):
+        """ Create a new object populated with value_list """
+        self.extend(value_list)
+        self._update_model()
 
     def get_selected(self, **kwargs):
         if self._gtk_modelview:
@@ -614,21 +645,67 @@ class ListPluginBase(PluginBase, list):
         if what is not 'PERSIST_TASK_SETTINGS':
             # ListPluginBase only returns task settings, nothing else
             return {}
-        return {self.name : [obj.get_persist_data() for obj in self]}
+        return {self.name :
+                    [obj.get_persist_data() for obj in self]}
 
+    def set_persist_data(self, what, data):
+        """
+        Restore pickled task settings to objects.
+        """
+        if not self.CHILD_ENTITY:
+            #FIXME don't need this warning
+            self.log.debug("Object %s has no CHILD_ENTITY" %
+                           self.name)
+            #/FIXME
+            return
+        while len(self) > 0:
+            self.pop()
+        #FIXME don't need this warning
+        self.log.debug("Setting data for %s object" %
+                       self.name)
+        #/FIXME
+        for i in data.get(self.name,[]):
+            self.append(self.CHILD_ENTITY(self.core,attributes=i))
+        self._update_model()
 
 class ObjectWithAttributes(dict):
 
-    def __init__(self, node_key=None, attributes=None, **kwargs):
+    # for some persistence serializers, e.g. XML
+    node_key = 'undefined'
+    defaults = {}
+    # map of uuid to objects for plugins that refer to other plugin
+    # entities
+    uuid_map = {}
+
+    def __init__(self, core=None, attributes=None, **kwargs):
         super(ObjectWithAttributes, self).__init__(**kwargs)
-        if not attributes is None:
-            self.update(attributes)
-        self["uuid"] = str(uuid.uuid4())
-        self.node_key = node_key
+        self.core = core
         self.log = _log
 
+        # set attribute defaults
+        self["name"] = self.node_key
+        self["uuid"] = str(uuid.uuid4())
+        self.update(copy.deepcopy(self.defaults))
+
+        # load attributes from parameter
+        if not attributes is None:
+            self.unpersist(attributes)
+        self._register_uuid()
+
+    def _register_uuid(self):
+        """ Put self in the uuid map """
+        self.uuid_map[self["uuid"]] = self
+
+    def _get_by_uuid(self,uuid):
+        """ Retrieve an entity by uuid """
+        return self.uuid_map.get(uuid,None)
+
+    def unpersist(self,attributes):
+        """ Update attributes from dict """
+        self.update(attributes)
+
     def get_persist_data(self):
-        """ Return a shallow dict copy of self to simplify pickling """
+        """ Return a copy with only generic types to simplify pickling """
         return self.copy()
 
 

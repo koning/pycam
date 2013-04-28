@@ -463,9 +463,6 @@ You should have received a copy of the GNU General Public License along with thi
   <object class="GtkAction" id="HelpHotkeys">
     <property name="label">_Keyboard Shortcuts</property>
   </object>
-  <object class="GtkAction" id="OpenRecentModel">
-    <property name="label">Open _Recent</property>
-  </object>
   <object class="GtkAction" id="DevelopmentBlog">
     <property name="label">_Development Blog</property>
   </object>

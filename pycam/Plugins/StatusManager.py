@@ -24,11 +24,10 @@ import yaml
 # FIXME this needs to go into PluginBase class; see below
 import gtk
 
-import pycam.Utils.log
 import pycam.Plugins
-from pycam.Gui.Project import FILTER_CONFIG
 from pycam.Utils.locations import get_ui_file_location
-from pycam.Utils.Persistence import Persistence, PersistenceException
+from pycam.Utils.Persistence import Persistence, PersistenceException, \
+    CONFIG_FILENAME_FILTER
 
 
 class StatusManager(pycam.Plugins.PluginBase):
@@ -50,6 +49,8 @@ class StatusManager(pycam.Plugins.PluginBase):
     CORE_METHODS = [
         'load_general_preferences',
         'save_general_preferences',
+        'load_task_settings_file',
+        'save_task_settings_file',
         ]
     PERSIST_GENERAL_PREFERENCES = \
         {'general' : [ "default_task_settings_file" ]}
@@ -67,9 +68,14 @@ class StatusManager(pycam.Plugins.PluginBase):
             autoload_box = self.gui.get_object("StartupTaskFileBox")
             autoload_source = self.gui.get_object("StartupTaskFile")
             # TODO: fix the extension filter
-            #for one_filter in get_filters_from_list(FILTER_CONFIG):
+            #for one_filter in get_filters_from_list(CONFIG_FILENAME_FILTER):
             #    autoload_source.add_filter(one_filter)
             #    autoload_source.set_filter(one_filter)
+            def get_autoload_task_file(autoload_source=autoload_source):
+                if autoload_enable.get_active():
+                    return autoload_source.get_filename()
+                else:
+                    return ""
             def set_autoload_task_file(filename):
                 if filename:
                     autoload_enable.set_active(True)
@@ -89,17 +95,17 @@ class StatusManager(pycam.Plugins.PluginBase):
             autoload_enable.connect("toggled", autoload_enable_switched,
                     autoload_box)
             self.core.add_item("default_task_settings_file",
-                    None, set_autoload_task_file)
+                    get_autoload_task_file, set_autoload_task_file)
             # Settings menu items
-            # FIXME This stuff REALLY needs to go into the PluginBase class
+            # FIXME This stuff REALLY needs to go into another (Persistence?) class
             self.last_task_settings_file = None
             actiongroup = gtk.ActionGroup("task_settings")
             for objname, callback, accel_key, data in (
                 ("LoadTaskSettings", self.load_task_settings_file, None, \
                      None),
-                ("SaveTaskSettings", self.save_task_settings_file, None, \
+                ("SaveTaskSettings", self.save_last_task_settings_file, None, \
                      None),
-                ("SaveAsTaskSettings", self.save_as_task_settings_file, None, \
+                ("SaveAsTaskSettings", self.save_task_settings_file, None, \
                      None),
                 ):
                 item = self.gui.get_object(objname)
@@ -125,96 +131,105 @@ class StatusManager(pycam.Plugins.PluginBase):
             self.core.get("gtk-uimanager").remove_ui(self.ui_merge_menus)
         self.unregister_core_methods()
 
-    def open_task_settings_file(self, filename):
-        """ This function is used by the commandline handler """
-        self.last_task_settings_file = filename
-        self.load_task_settings_file(filename=filename)
+    def load_task_settings_file(self, widget=None, filename=None,
+                                load_default=False, no_widget=False):
+        """
+        Load task settings from a file.  If filename is empty, bring
+        up a chooser widget.
 
-    def load_task_settings_file(self, widget=None, filename=None):
-        if callable(filename):
-            filename = filename()
-        if not filename:
-            filename = self.core.get_filename(
-                "Loading settings ...",
-                mode_load=True,
-                type_filter=FILTER_CONFIG)
-            # Only update the last_task_settings attribute if the task
-            # file was loaded interactively, i.e. ignore the initial
-            # task file loading.
-            if filename:
-                self.last_task_settings_file = filename
-        if filename:
-            self.load_task_settings(filename)
-            self.core.add_to_recent_file_list(filename)
+        load_default:  If set, load the default task settings file from
+        general preferences (at startup).
 
-    def save_as_task_settings_file(self, widget=None, filename=None,
-                                   dialog_unless_filename=False):
-        if callable(filename):
-            filename = filename()
-        if not isinstance(filename, (basestring, pycam.Utils.URIHandler)) \
-                and not (filename and dialog_unless_filename):
-            # we open a dialog
-            filename = self.core.get_filename(
-                "Save settings to ...",
-                mode_load=False,
-                type_filter=FILTER_CONFIG,
-                filename_templates=[
-                    pycam.Utils.URIHandler(self.last_task_settings_file)])
-            if filename:
-                self.last_task_settings_file = filename
-        # no filename given -> exit
+        no_widget:  If set, never bring up a widget (for command line).
+        """
+        #FIXME much of this goes into Persistence
+        if load_default:
+            # Don't pop up a widget, just load the default file
+            filename = self.core.get("default_task_settings_file")
+        else:
+            if not filename and not no_widget:
+                # Pop up a widget
+                filename = self.core.get_filename(
+                    "Load task settings ...",
+                    mode_load=True,
+                    type_filter=CONFIG_FILENAME_FILTER)
+                # Only update the last_task_settings attribute if the task
+                # file was loaded interactively, i.e. ignore the initial
+                # task file loading.
+                if filename:
+                    self.last_task_settings_file = filename
         if not filename:
+            self.log.debug("No task settings filename specified; not loading")
             return
+            
+        # load task settings
         try:
-            out_file = open(filename, "w")
-            out_file.write(self.dump_task_settings())
-            out_file.close()
-            _log.info("Task settings written to %s" % filename)
+            self.set_global_persist_data(
+                'PERSIST_TASK_SETTINGS',
+                self.persistence.load_data_file(filename))
+            self.log.info("Task settings read from %s" % filename)
             self.core.add_to_recent_file_list(filename)
-        except IOError:
-            _log.error("Failed to save settings file")
+        except PersistenceException, e:
+            self.log.error("Failed to load settings file %s:  %s" %
+                           (filename, e.msg))
+        #/FIXME
 
-    def save_task_settings_file(self, widget=None, filename=None):
+    def save_task_settings_file(self, widget=None, filename=None,
+                                save_default=False, no_widget=False):
+        """
+        Save task settings to a file.  By default bring up a file
+        chooser window; this can be used as a callback for the 'save
+        task settings as...' menu item.  If the filename param is set,
+        save to that file without opening a chooser window.
+
+        save_default:  If set, load the 'default task settings file'
+        from general preferences (used at startup).
+
+        no_widget:  If set, never bring up a widget (for command line).
+        """
+        #FIXME much of this goes into Persistence
+        if save_default:
+            # Don't pop up a widget, just save the default file
+            filename = self.core.get("default_task_settings_file")
+        else:
+            # get filename from dialog
+            if not no_widget and (filename is None or not str(filename)):
+                # open a file chooser dialog if no filename specified
+                filename = self.core.get_filename(
+                    "Save task settings ...", False, CONFIG_FILENAME_FILTER,
+                    self.last_task_settings_file)
+                # Only update the last_task_settings attribute if the task
+                # file was loaded interactively, i.e. ignore the initial
+                # task file loading.
+                if filename:
+                    self.last_task_settings_file = filename
+        if not filename:
+            self.log.debug("No task settings file specified; not saving")
+            return
+
+        # save task settings
+        try:
+            self.persistence.save_data_file(
+                filename,
+                self.get_global_persist_data('PERSIST_TASK_SETTINGS'))
+            self.log.info("Task settings written to %s" % filename)
+            self.core.add_to_recent_file_list(filename)
+        except PersistenceException, e:
+            self.log.error("Failed to save settings file %s:  %s" %
+                           (filename, e.msg))
+        #/FIXME
+
+    def save_last_task_settings_file(self, widget=None, filename=None):
+        """
+        Save task settings to a file.  Present a file chooser window
+        if the settings have never been loaded or saved from a chooser
+        window before.  This is suitable behavior for the 'save task
+        settings' menu item callback.
+        """
         if filename is None:
             filename = self.last_task_settings_file
-        self.save_as_task_settings_file(widget, filename, True)
+        self.save_task_settings_file(widget, filename)
 
-    def load_task_settings(self, filename=None):
-        settings = pycam.Gui.Settings.ProcessSettings()
-
-        # if filename is None, then we're probably being called from
-        # from the pycam executable, so look for a default file
-        if filename is None or filename == '':
-            filename = self.core.get("default_task_settings_file")
-            # Project.py defaults and preference file saves '' for None
-            if filename == '':
-                filename = None
-            else:
-                self.log.info("filename: '%s'" % str(filename))
-        if not filename is None:
-            self.log.info("Loading task settings file: %s" % str(filename))
-            settings.load_file(filename)
-        else:
-            self.log.debug("No task settings file defined; not loading")
-
-        # flush all tables (without re-assigning new objects)
-        for one_list_name in ("tool_settings", "process_settings", "bounds"):
-            one_list = self.core.get(one_list_name)
-            while one_list:
-                one_list.pop()
-        # TODO: load default tools/processes/bounds
-
-    def save_task_settings(self, filename=None):
-        settings = pycam.Gui.Settings.ProcessSettings()
-
-        # FIXME:  not implemented
-        self.log.warning("Save task settings function not implemented")
-
-    def get_global_general_preferences(self):
-        """
-        Return global preferences data
-        """
-        return self.get_global_persist_data('PERSIST_GENERAL_PREFERENCES')
 
     def get_global_persist_data(self, what):
         """
@@ -229,29 +244,25 @@ class StatusManager(pycam.Plugins.PluginBase):
                                            plugin.get_persist_data(what))
         return result
 
+    def set_global_persist_data(self, what, data):
+        """
+        Store a dict of merged plugin data back to modules.
+        'what' should either be 'PERSIST_GENERAL_PREFERENCES' or
+        'PERSIST_TASK_SETTINGS'.
+        """
+        for plugin in self.core.plugin_manager.get_plugins_sorted():
+            if plugin.enabled:
+                plugin.set_persist_data(what, data)
+
+
     def _merge_state(self, result, src):
+        """ Recursive helper for get_global_persist_data """
         for key, value in src.items():
             if isinstance(value,dict):
                 result[key] = self._merge_state(result.get(key,{}), src[key])
             else:
                 result[key] = src[key]
         return result
-
-    def dump_task_settings(self):
-        state = self.gather_all_state()
-        serialized_state = yaml.safe_dump(state["task-settings"],
-                                          default_flow_style=False)
-        return serialized_state
-
-
-    def set_global_general_preferences(self,prefs):
-        """
-        Process a PERSIST_GENERAL_PREFERENCES dict
-        """
-        plugins = self.core.plugin_manager.get_plugins()
-        for plugin in plugins:
-            if plugin.enabled and plugin.PERSIST_GENERAL_PREFERENCES:
-                plugin.set_general_preferences(prefs)
 
 
     def load_general_preferences(self):
@@ -261,14 +272,11 @@ class StatusManager(pycam.Plugins.PluginBase):
         try:
             prefs = self.persistence.load_preferences_file()
         except PersistenceException, e:
-            # Problems loading the config file should be expected on
-            # occasion (like first time to start PyCAM).  Log as
-            # warning and return
-            log.warn(e.message)
+            self.log.warn(e.message)
             return
 
         # save prefs to plugins
-        self.set_global_general_preferences(prefs)
+        self.set_global_persist_data('PERSIST_GENERAL_PREFERENCES', prefs)
 
 
     def save_general_preferences(self):
@@ -276,7 +284,7 @@ class StatusManager(pycam.Plugins.PluginBase):
         a file in the user's home directory """
 
         # get prefs from plugins
-        prefs = self.get_global_general_preferences()
+        prefs = self.get_global_persist_data('PERSIST_GENERAL_PREFERENCES')
 
         # write prefs to file
         try:
@@ -284,6 +292,6 @@ class StatusManager(pycam.Plugins.PluginBase):
         except PersistenceException, e:
             # Problems saving the config may happen on occasion.  Log
             # as error and return.
-            log.error(e.message)
+            self.log.error(e.message)
             return
 

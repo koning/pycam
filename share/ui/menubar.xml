@@ -2,7 +2,7 @@
   <menubar name="MenuBar">
     <menu action="FileMenu">
       <menuitem action="OpenModel"/>
-      <menuitem action="OpenRecentModel" name="OpenRecentModelMenu"/>
+      <placeholder name="FileMenuItems"/>
       <separator />
       <menu action="ExportMenu" />
       <separator />

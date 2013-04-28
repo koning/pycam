@@ -2,6 +2,20 @@ import os
 import yaml
 import pycam.Utils.log
 
+MODEL_FILENAME_FILTER = (
+    ("All supported model filetypes",
+     ("*.stl", "*.dxf", "*.svg", "*.eps", "*.ps")),
+    ("STL models", "*.stl"),
+    ("DXF contours", "*.dxf"),
+    ("SVG contours", "*.svg"),
+    ("PS contours", ("*.eps", "*.ps")),
+    )
+
+CONFIG_FILENAME_FILTER = (
+    ("Config files", "*.conf"),
+    )
+
+
 class PersistenceException(Exception):
     """
     Exception class for the Persistence module
@@ -88,14 +102,34 @@ class Persistence(object):
                 )
 
 
+    def load_data_file(self, filename):
+        """
+        Read data from file, unserialize, and return
+        """
+        # Read data from file
+        file_contents = self.load_file(filename)
+
+        # Return prefs structure from YAML format
+        return self.unserialize_data(file_contents)
+
+
+    def save_data_file(self, filename, data, comment=''):
+        """
+        Serialize data and store to a file with optional comment
+        """
+        # Serialize data into YAML format
+        serialized_data = self.serialize_data(data, comment=comment)
+
+        # Save prefs into preferences file
+        self.save_file(filename, serialized_data)
+
+
     def load_preferences_file(self):
         """
         Load the preferences file into a generic data structure for
         consumption by the StatusManager plugin
         """
         # Get preferences filename
-        #     If this throws an exception, let it fail; user should
-        #     fix the problem.
         try:
             preferences_filename = self.get_preferences_filename()
             self.log.debug("Saved preferences file '%s'" % preferences_filename)
@@ -103,29 +137,24 @@ class Persistence(object):
             # Failed to write file; inform user
             self.log.error("Failed to write preferences file '%s': %s" %
                 (preferences_filename, e.msg))
-            
 
         # Read prefs from preferences file
         try:
-            file_contents = self.load_file(preferences_filename)
+            prefs = self.load_data_file(preferences_filename)
+            self.log.debug("Loaded preferences file '%s'" %
+                           preferences_filename)
         except PersistenceException as e:
             # Failed to create prefs dir; inform user
             self.log.error(e.msg)
             return
 
-        # Return prefs structure from YAML format
-        return self.unserialize_data(file_contents)
+        return prefs
 
     def save_preferences_file(self, prefs):
         """
         Save the preferences file from a generic data structure
         provided by the StatusManager plugin
         """
-        # Serialize prefs into YAML format
-        #    Add a comment at the beginning (with emacs mode id)
-        comment = '# PyCAM preferences file' + ' '*45 + '-*-yaml-*-\n'
-        serialized_prefs = self.serialize_data(prefs, comment=comment)
-
         # Get preferences filename
         try:
             preferences_filename = self.get_preferences_filename()
@@ -134,9 +163,12 @@ class Persistence(object):
             self.log.error(e.msg)
             return
 
+        # Initial comment at the beginning (with emacs mode id)
+        comment = '# PyCAM preferences file' + ' '*45 + '-*-yaml-*-\n'
+
         # Save prefs into preferences file
         try:
-            self.save_file(preferences_filename, serialized_prefs)
+            self.save_data_file(preferences_filename, prefs, comment=comment)
             self.log.debug("Saved preferences file '%s'" % preferences_filename)
         except IOError, e:
             # Failed to write file; inform user

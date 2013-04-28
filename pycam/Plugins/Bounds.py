@@ -30,11 +30,85 @@ _RELATIVE_UNIT = ("%", "mm")
 _BOUNDARY_MODES = ("inside", "along", "around")
 
 
+class BoundsEntity(pycam.Plugins.ObjectWithAttributes):
+
+    node_key = 'Bounds'
+    defaults = {
+        'parameters' :
+            { "BoundaryLowX": 0,
+              "BoundaryLowY": 0,
+              "BoundaryLowZ": 0,
+              "BoundaryHighX": 0,
+              "BoundaryHighY": 0,
+              "BoundaryHighZ": 0,
+              "TypeRelativeMargin": True,
+              "TypeCustom": False,
+              # Use "list" conversion here: python 2.5 does not support
+              # "index" for tuples.
+              "RelativeUnit": list(_RELATIVE_UNIT).index("%"),
+              "ToolLimit": list(_BOUNDARY_MODES).index("along"),
+              "Models": [],
+              }
+        }
+
+    def get_absolute_limits(self, tool_radius=None, models=None):
+        default = (None, None, None), (None, None, None)
+        get_low_value = lambda axis: \
+                self["parameters"]["BoundaryLow%s" % "XYZ"[axis]]
+        get_high_value = lambda axis: \
+                self["parameters"]["BoundaryHigh%s" % "XYZ"[axis]]
+        if self["parameters"]["TypeRelativeMargin"]:
+            # choose the appropriate set of models
+            if self["parameters"]["Models"]:
+                # configured models always take precedence
+                models = self["parameters"]["Models"]
+            elif models:
+                # use the supplied models (e.g. for toolpath calculation)
+                pass
+            else:
+                # use all visible models -> for live visualization
+                models = self.core.get("models").get_visible()
+            low_model, high_model = pycam.Geometry.Model.get_combined_bounds(
+                    [model.model for model in models])
+            if None in low_model or None in high_model:
+                # zero-sized models -> no action
+                return default
+            is_percent = _RELATIVE_UNIT[self["parameters"]["RelativeUnit"]] == "%"
+            low, high = [], []
+            if is_percent:
+                for axis in range(3):
+                    dim = high_model[axis] - low_model[axis]
+                    low.append(low_model[axis] - (get_low_value(axis) / 100.0 * dim))
+                    high.append(high_model[axis] + (get_high_value(axis) / 100.0 * dim))
+            else:
+                for axis in range(3):
+                    low.append(low_model[axis] - get_low_value(axis))
+                    high.append(high_model[axis] + get_high_value(axis))
+        else:
+            low, high = [], []
+            for axis in range(3):
+                low.append(get_low_value(axis))
+                high.append(get_high_value(axis))
+        tool_limit = _BOUNDARY_MODES[self["parameters"]["ToolLimit"]]
+        # apply inside/along/outside if a tool is given
+        if tool_radius and (tool_limit != "along"):
+            if tool_limit == "inside":
+                offset = -tool_radius
+            else:
+                offset = tool_radius
+            # apply offset only for x and y
+            for index in range(2):
+                low[index] -= offset
+                high[index] += offset
+        return low, high
+
+
 class Bounds(pycam.Plugins.ListPluginBase):
 
     UI_FILE = "bounds.ui"
     DEPENDS = ["Models"]
     CATEGORIES = ["Bounds"]
+    CHILD_ENTITY = BoundsEntity
 
     # mapping of boundary types and GUI control elements
     BOUNDARY_TYPES = {
@@ -363,7 +437,7 @@ class Bounds(pycam.Plugins.ListPluginBase):
     def _bounds_new(self, *args):
         name = get_non_conflicting_name("Bounds #%d",
                 [bounds["name"] for bounds in self])
-        new_bounds = BoundsDict(self.core, name)
+        new_bounds = BoundsEntity(self.core, attributes = {'name' : name})
         self.append(new_bounds)
         self.select(new_bounds)
 
@@ -372,79 +446,3 @@ class Bounds(pycam.Plugins.ListPluginBase):
         if bounds and (new_text != bounds["name"]) and new_text:
             bounds["name"] = new_text
             self.core.emit_event("bounds-list-changed")
-
-
-class BoundsDict(pycam.Plugins.ObjectWithAttributes):
-
-    def __init__(self, core, name, *args, **kwargs):
-        super(BoundsDict, self).__init__("bounds", *args, **kwargs)
-        self["name"] = name
-        self["parameters"] = {}
-        self.core = core
-        self["parameters"].update({
-                "BoundaryLowX": 0,
-                "BoundaryLowY": 0,
-                "BoundaryLowZ": 0,
-                "BoundaryHighX": 0,
-                "BoundaryHighY": 0,
-                "BoundaryHighZ": 0,
-                "TypeRelativeMargin": True,
-                "TypeCustom": False,
-                # Use "list" conversion here: python 2.5 does not support
-                # "index" for tuples.
-                "RelativeUnit": list(_RELATIVE_UNIT).index("%"),
-                "ToolLimit": list(_BOUNDARY_MODES).index("along"),
-                "Models": [],
-        })
-
-    def get_absolute_limits(self, tool_radius=None, models=None):
-        default = (None, None, None), (None, None, None)
-        get_low_value = lambda axis: \
-                self["parameters"]["BoundaryLow%s" % "XYZ"[axis]]
-        get_high_value = lambda axis: \
-                self["parameters"]["BoundaryHigh%s" % "XYZ"[axis]]
-        if self["parameters"]["TypeRelativeMargin"]:
-            # choose the appropriate set of models
-            if self["parameters"]["Models"]:
-                # configured models always take precedence
-                models = self["parameters"]["Models"]
-            elif models:
-                # use the supplied models (e.g. for toolpath calculation)
-                pass
-            else:
-                # use all visible models -> for live visualization
-                models = self.core.get("models").get_visible()
-            low_model, high_model = pycam.Geometry.Model.get_combined_bounds(
-                    [model.model for model in models])
-            if None in low_model or None in high_model:
-                # zero-sized models -> no action
-                return default
-            is_percent = _RELATIVE_UNIT[self["parameters"]["RelativeUnit"]] == "%"
-            low, high = [], []
-            if is_percent:
-                for axis in range(3):
-                    dim = high_model[axis] - low_model[axis]
-                    low.append(low_model[axis] - (get_low_value(axis) / 100.0 * dim))
-                    high.append(high_model[axis] + (get_high_value(axis) / 100.0 * dim))
-            else:
-                for axis in range(3):
-                    low.append(low_model[axis] - get_low_value(axis))
-                    high.append(high_model[axis] + get_high_value(axis))
-        else:
-            low, high = [], []
-            for axis in range(3):
-                low.append(get_low_value(axis))
-                high.append(get_high_value(axis))
-        tool_limit = _BOUNDARY_MODES[self["parameters"]["ToolLimit"]]
-        # apply inside/along/outside if a tool is given
-        if tool_radius and (tool_limit != "along"):
-            if tool_limit == "inside":
-                offset = -tool_radius
-            else:
-                offset = tool_radius
-            # apply offset only for x and y
-            for index in range(2):
-                low[index] -= offset
-                high[index] += offset
-        return low, high
-

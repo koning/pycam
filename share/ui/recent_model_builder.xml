@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<interface>
+  <object class="GtkAction" id="OpenRecentModel">
+    <property name="label">Open _Recent</property>
+  </object>
+</interface>

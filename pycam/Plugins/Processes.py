@@ -24,11 +24,17 @@ import pycam.Plugins
 from pycam.Utils import get_non_conflicting_name
 
 
+class ProcessEntity(pycam.Plugins.ObjectWithAttributes):
+
+    node_key = 'Process'
+
+
 class Processes(pycam.Plugins.ListPluginBase):
 
     DEPENDS = ["ParameterGroupManager"]
     CATEGORIES = ["Process"]
     UI_FILE = "processes.ui"
+    CHILD_ENTITY = ProcessEntity
 
     def setup(self):
         self.core.set("processes", self)
@@ -245,15 +251,9 @@ class Processes(pycam.Plugins.ListPluginBase):
         strategy = strategies[0]
         name = get_non_conflicting_name("Process #%d",
                 [process["name"] for process in self])
-        new_process = ProcessEntity({"strategy": strategy["name"],
-                "parameters": strategy["parameters"].copy(),
-                "name": name})
+        new_process = ProcessEntity(
+            attributes={"strategy": strategy["name"],
+                        "parameters": strategy["parameters"].copy(),
+                        "name": name})
         self.append(new_process)
         self.select(new_process)
-
-
-class ProcessEntity(pycam.Plugins.ObjectWithAttributes):
-
-    def __init__(self, parameters):
-        super(ProcessEntity, self).__init__("process", parameters)
-
