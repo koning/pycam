@@ -716,7 +716,7 @@ class ProjectGui(object):
         self.settings.emit_event("model-change-after")
 
     def _browse_external_program_location(self, widget=None, key=None):
-        location = self.settings.get_filename_func(title="Select the executable " \
+        location = self.settings.get_filename(title="Select the executable " \
                 + "for '%s'" % key, mode_load=True,
                 parent=self.preferences_window)
         if not location is None:
@@ -843,8 +843,8 @@ class ProjectGui(object):
         if callable(filename):
             filename = filename()
         if not filename:
-            filename = self.settings.get_filename_func("Loading model ...",
-                    mode_load=True, type_filter=FILTER_MODEL)
+            filename = self.settings.get_filename("Loading model ...",
+                    mode_load=True, type_filter=MODEL_FILENAME_FILTER)
         if filename:
             file_type, importer = pycam.Importers.detect_file_type(filename)
             if file_type and callable(importer):

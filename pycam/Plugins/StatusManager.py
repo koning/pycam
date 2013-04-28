@@ -134,7 +134,7 @@ class StatusManager(pycam.Plugins.PluginBase):
         if callable(filename):
             filename = filename()
         if not filename:
-            filename = self.core.get_filename_func(
+            filename = self.core.get_filename(
                 "Loading settings ...",
                 mode_load=True,
                 type_filter=FILTER_CONFIG)
@@ -154,7 +154,7 @@ class StatusManager(pycam.Plugins.PluginBase):
         if not isinstance(filename, (basestring, pycam.Utils.URIHandler)) \
                 and not (filename and dialog_unless_filename):
             # we open a dialog
-            filename = self.core.get_filename_func(
+            filename = self.core.get_filename(
                 "Save settings to ...",
                 mode_load=False,
                 type_filter=FILTER_CONFIG,

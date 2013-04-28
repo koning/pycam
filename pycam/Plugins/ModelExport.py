@@ -118,7 +118,7 @@ class ModelExportTrimesh(pycam.Plugins.PluginBase):
             # TODO: this needs to be decided by the exporter code
             type_filter = [("STL models", "*.stl")]
             model_name = model["name"]
-            filename = self.core.get_filename_func(
+            filename = self.core.get_filename(
                     "Save model '%s' to ..." % model_name,
                     mode_load=False, type_filter=type_filter,
                     filename_templates=[])
@@ -167,7 +167,7 @@ class ModelExportContour(pycam.Plugins.PluginBase):
             # determine the file type
             # TODO: this needs to be decided by the exporter code
             type_filter = [("SVG models", "*.svg")]
-            filename = self.core.get_filename_func(
+            filename = self.core.get_filename(
                     "Save model '%s' to ..." % model["name"],
                     mode_load=False, type_filter=type_filter,
                     filename_templates=[])
