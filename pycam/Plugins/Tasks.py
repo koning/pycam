@@ -139,11 +139,6 @@ class Tasks(pycam.Plugins.ListPluginBase):
         while len(self) > 0:
             self.pop()
 
-    def dump_state(self):
-        # For now, we're not saving tasks.
-        return {"gui-settings" : {},
-                "task-settings" : {}}
-
     def _edit_task_name(self, cell, path, new_text):
         task = self.get_by_path(path)
         if task and (new_text != task["name"]) and new_text:
