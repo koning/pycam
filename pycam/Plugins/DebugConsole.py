@@ -9,6 +9,7 @@ class DebugConsole(pycam.Plugins.PluginBase):
     CATEGORIES = ["System"]
     UI_FILE = "debug_console.ui"
     GTKMENU_FILE = 'debug_console_ui.xml'
+    CORE_METHODS = ['start_debug_console']
 
     def setup(self):
         if self.gui:
@@ -23,7 +24,8 @@ class DebugConsole(pycam.Plugins.PluginBase):
 
             gtkmenu_file = get_ui_file_location(self.GTKMENU_FILE)
             self.ui_merge_menus = uimanager.add_ui_from_file(gtkmenu_file)
-
+        self.register_core_methods()
+        return True
 
     def start_debug_console(self, widget=None):
         # list of variables available in the debug shell
