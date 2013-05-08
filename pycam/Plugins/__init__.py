@@ -528,7 +528,8 @@ class ListPluginBase(PluginBase, list):
                 treemodel.append((uuid, ))
         # reorder the treemodel according to the current list
         sorted_indices = [current_uuids.index(row[0]) for row in treemodel]
-        treemodel.reorder(sorted_indices)
+        if sorted_indices:
+            treemodel.reorder(sorted_indices)
         self.core.emit_event("tool-list-changed")
         # warn about a potential pygtk or gtk bug where
         # treemodel.reorder doesn't work; observed in pygtk 2.24.0,
