@@ -530,6 +530,13 @@ class ListPluginBase(PluginBase, list):
         sorted_indices = [current_uuids.index(row[0]) for row in treemodel]
         treemodel.reorder(sorted_indices)
         self.core.emit_event("tool-list-changed")
+        # warn about a potential pygtk or gtk bug where
+        # treemodel.reorder doesn't work; observed in pygtk 2.24.0,
+        # gtk 2.24.8 on fc16
+        sorted_indices = [current_uuids.index(row[0]) for row in treemodel]
+        if range(len(sorted_indices)) != sorted_indices:
+            self.log.warn("Reordering treemodel failed, %s != %s" %
+                          (range(len(sorted_indices)),sorted_indices))
 
     def get_by_path(self, path):
         if not self._gtk_modelview:
