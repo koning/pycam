@@ -144,6 +144,7 @@ class RecentManager(pycam.Plugins.PluginBase):
                                      self.add_to_recent_file_list)
 
         self.register_core_methods()
+        return True
 
     def teardown(self):
         if self.gui:
