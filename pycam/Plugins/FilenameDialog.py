@@ -177,7 +177,7 @@ class RecentManager(pycam.Plugins.PluginBase):
 class FilenameDialog(pycam.Plugins.PluginBase):
 
     CATEGORIES = ["System"]
-    CORE_METHODS = ['get_filename']
+    CORE_METHODS = ['get_filename', 'get_filechooserbutton']
 
     def setup(self):
         import gtk
@@ -191,9 +191,10 @@ class FilenameDialog(pycam.Plugins.PluginBase):
     def teardown(self):
         self.unregister_core_methods()
 
-    def get_filename(self, title="Choose file ...", mode_load=False,
+    def get_dialog(self, title="Choose file ...", mode_load=False,
                      type_filter=None, filename_templates=None,
                      filename_extension=None, parent=None, extra_widget=None):
+        """Get a configured FileChooserDialog object"""
         gtk = self._gtk
         if parent is None:
             parent = self.core.get("main_window")
@@ -260,9 +261,36 @@ class FilenameDialog(pycam.Plugins.PluginBase):
         ext_filter.set_name("All files")
         ext_filter.add_pattern("*")
         dialog.add_filter(ext_filter)
+        dialog.set_filter(dialog.list_filters()[0])
+        return dialog
+
+
+    def get_filechooserbutton(self, title="Choose file ...", mode_load=False,
+                     type_filter=None, filename_templates=None,
+                     filename_extension=None, parent=None, extra_widget=None):
+        """Create a gtk.FileChooserButton widget"""
+        dialog = self.get_dialog(title=title, mode_load=mode_load,
+                                 type_filter=type_filter,
+                                 filename_templates=filename_templates,
+                                 filename_extension=filename_extension,
+                                 parent=parent, extra_widget=extra_widget)
+        return gtk.FileChooserButton(dialog)
+
+
+    def get_filename(self, title="Choose file ...", mode_load=False,
+                     type_filter=None, filename_templates=None,
+                     filename_extension=None, parent=None, extra_widget=None):
+        dialog = self.get_dialog(title=title, mode_load=mode_load,
+                                 type_filter=type_filter,
+                                 filename_templates=filename_templates,
+                                 filename_extension=filename_extension,
+                                 parent=parent, extra_widget=extra_widget)
+
+        gtk = self._gtk
+        if parent is None:
+            parent = self.core.get("main_window")
         done = False
         while not done:
-            dialog.set_filter(dialog.list_filters()[0])
             response = dialog.run()
             filename = dialog.get_filename()
             uri = pycam.Utils.URIHandler(filename)
@@ -274,17 +302,21 @@ class FilenameDialog(pycam.Plugins.PluginBase):
                 # check if we want to add a default suffix
                 filename = _get_filename_with_suffix(filename, type_filter)
             if not mode_load and os.path.exists(filename):
-                overwrite_window = gtk.MessageDialog(parent, type=gtk.MESSAGE_WARNING,
-                        buttons=gtk.BUTTONS_YES_NO,
-                        message_format="This file exists. Do you want to overwrite it?")
+                overwrite_window = gtk.MessageDialog(
+                    parent,
+                    type=gtk.MESSAGE_WARNING,
+                    buttons=gtk.BUTTONS_YES_NO,
+                    message_format="File exists. Overwrite?")
                 overwrite_window.set_title("Confirm overwriting existing file")
                 response = overwrite_window.run()
                 overwrite_window.destroy()
                 done = (response == gtk.RESPONSE_YES)
             elif mode_load and not uri.exists():
-                not_found_window = gtk.MessageDialog(parent, type=gtk.MESSAGE_ERROR,
+                not_found_window = gtk.MessageDialog(
+                        parent, type=gtk.MESSAGE_ERROR,
                         buttons=gtk.BUTTONS_OK,
-                        message_format="This file does not exist. Please choose a different filename.")
+                        message_format=("File does not exist. Please choose "
+                                        "a different filename."))
                 not_found_window.set_title("Invalid filename selected")
                 response = not_found_window.run()
                 not_found_window.destroy()
