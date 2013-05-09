@@ -50,6 +50,7 @@ class BoundsEntity(pycam.Plugins.ObjectWithAttributes):
               "Models": [],
               }
         }
+    entitylist_parameters = ['Models']
 
     def get_absolute_limits(self, tool_radius=None, models=None):
         default = (None, None, None), (None, None, None)

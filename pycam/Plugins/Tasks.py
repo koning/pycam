@@ -30,31 +30,7 @@ from pycam.Utils import get_non_conflicting_name
 
 class TaskEntity(pycam.Plugins.ObjectWithAttributes):
 
-    def get_persist_data(self):
-        """ Return a copy with only generic types to simplify pickling """
-        dict_copy = self.copy()
-        # 'parameters' contains pointers to other FooEntity objects
-        # which also need to be serializable
-        dict_copy['parameters'] = self['parameters'].copy()
-        for key in dict_copy['parameters']:
-            if isinstance(dict_copy['parameters'][key],
-                          pycam.Plugins.ObjectWithAttributes):
-                dict_copy['parameters'][key] = \
-                    dict_copy['parameters'][key]['uuid']
-        return dict_copy
-
-    def unpersist(self,attributes):
-        """ Update attributes from dict """
-        super(TaskEntity, self).unpersist(attributes)
-        # Restore pointers to other Entity objects by uuid
-        for key, value in self['parameters'].items():
-            if isinstance(value,str):
-                # assume this is a uuid
-                entity = self._get_by_uuid(value)
-                if not entity:
-                    self.log.info("Unable to retrieve '%s' entity, uuid = %s" %
-                                  (key, value))
-                self['parameters'][key] = entity
+    entitylist_parameters = ['collision_models']
 
 
 class Tasks(pycam.Plugins.ListPluginBase):

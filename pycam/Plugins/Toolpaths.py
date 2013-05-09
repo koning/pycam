@@ -26,11 +26,17 @@ import pycam.Toolpath
 from pycam.Utils import get_non_conflicting_name
 
 
+class ToolpathEntity(pycam.Toolpath.Toolpath,
+        pycam.Plugins.ObjectWithAttributes):
+
+    node_key = 'Toolpath'
+
 class Toolpaths(pycam.Plugins.ListPluginBase):
 
     UI_FILE = "toolpaths.ui"
     CATEGORIES = ["Toolpath"]
     ICONS = {"visible": "visible.svg", "hidden": "visible_off.svg"}
+    CHILD_ENTITY = ToolpathEntity
 
     def setup(self):
         self.last_toolpath_file = None
@@ -164,10 +170,10 @@ class Toolpaths(pycam.Plugins.ListPluginBase):
                 toolpath_filters=filters)
         self.append(new_tp)
 
+    def get_persist_data(self, what=None):
+        """ Not saving data for now"""
+        return {}
 
-class ToolpathEntity(pycam.Toolpath.Toolpath,
-        pycam.Plugins.ObjectWithAttributes):
-
-    def __init__(self, **kwargs):
-        super(ToolpathEntity, self).__init__(node_key="toolpath", **kwargs)
-
+    def set_persist_data(self, what, data):
+        """ Not restoring data for now """
+        pass

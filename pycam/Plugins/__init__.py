@@ -250,9 +250,6 @@ class PluginBase(object):
                              "preferences") % (self.name, setting))
                         continue
                     self.core.set(setting, data[key][setting])
-                    self.log.debug("plugin %s set self.core[%s] = %s" % \
-                                       (self.name, setting,
-                                        data[key][setting]))
             else:
                 # recurse into structural dict
                 self.set_persist_data(what, data[key], template[key])
@@ -661,17 +658,9 @@ class ListPluginBase(PluginBase, list):
         Restore pickled task settings to objects.
         """
         if not self.CHILD_ENTITY:
-            #FIXME don't need this warning
-            self.log.debug("Object %s has no CHILD_ENTITY" %
-                           self.name)
-            #/FIXME
             return
         while len(self) > 0:
             self.pop()
-        #FIXME don't need this warning
-        self.log.debug("Setting data for %s object" %
-                       self.name)
-        #/FIXME
         for i in data.get(self.name,[]):
             self.append(self.CHILD_ENTITY(self.core,attributes=i))
         self._update_model()
@@ -681,6 +670,8 @@ class ObjectWithAttributes(dict):
     # for some persistence serializers, e.g. XML
     node_key = 'undefined'
     defaults = {}
+    # parameter keys that contain lists of other ObjectWithAttributes types
+    entitylist_parameters = []
     # map of uuid to objects for plugins that refer to other plugin
     # entities
     uuid_map = {}
@@ -708,13 +699,45 @@ class ObjectWithAttributes(dict):
         """ Retrieve an entity by uuid """
         return self.uuid_map.get(uuid,None)
 
+    def get_persist_data(self):
+        """ Return a copy with only generic types to simplify pickling """
+        dict_copy = self.copy()
+        if 'parameters' not in self:
+            return dict_copy
+        # 'parameters' may contain pointers to other FooEntity objects
+        # which also need to be serializable
+        dict_copy['parameters'] = self['parameters'].copy()
+        for key in dict_copy['parameters']:
+            if isinstance(dict_copy['parameters'][key],
+                          pycam.Plugins.ObjectWithAttributes):
+                dict_copy['parameters'][key] = \
+                    dict_copy['parameters'][key]['uuid']
+        # There may be deeper lists as well
+        for key in self.entitylist_parameters:
+            if key in dict_copy['parameters']:
+                dict_copy['parameters'][key] = \
+                    [m['uuid'] for m in self['parameters'][key]]
+        return dict_copy
+
     def unpersist(self,attributes):
         """ Update attributes from dict """
         self.update(attributes)
-
-    def get_persist_data(self):
-        """ Return a copy with only generic types to simplify pickling """
-        return self.copy()
+        # Translate saved uuids in 'parameters' back to Entity objects
+        for key, value in self.get('parameters',{}).items():
+            if isinstance(value,str):
+                # assume this is a uuid
+                entity = self._get_by_uuid(value)
+                if not entity:
+                    self.log.info("Unable to retrieve '%s' entity, uuid = %s" %
+                                  (key, value))
+                self['parameters'][key] = entity
+        # and any deeper lists as well
+        for key in self.entitylist_parameters:
+            if key in self['parameters']:
+                self['parameters'][key] = \
+                    [self._get_by_uuid(m) for m in \
+                         self['parameters'][key] \
+                         if self._get_by_uuid(m)]
 
 
 def filter_list(items, *args, **kwargs):
