@@ -132,7 +132,7 @@ class ToolpathProcessors(pycam.Plugins.ListPluginBase):
             # TODO: it is currently not possible to switch processors (invalid dict entries are not removed)
             proc_widget.hide()
             #proc_widget.show()
-            self.core.get("register_parameter_group")("toolpath_processor",
+            self.core.register_parameter_group("toolpath_processor",
                     changed_set_event="toolpath-processor-selection-changed",
                     changed_set_list_event="toolpath-processor-list-changed",
                     get_current_set_func=self.get_selected)
@@ -153,17 +153,17 @@ class ToolpathProcessors(pycam.Plugins.ListPluginBase):
             self._toggle_window(False)
         self.core.set("toolpath_processors", None)
         self.unregister_event_handlers(self._event_handlers)
-        self.core.get("unregister_parameter_group")("toolpath_processor")
+        self.core.unregister_parameter_group("toolpath_processor")
 
     def _select_first_processor(self):
         # run this action as soon as all processors are registered
-        processors = self.core.get("get_parameter_sets")("toolpath_processor").values()
+        processors = self.core.get_parameter_sets("toolpath_processor").values()
         processors.sort(key=lambda item: item["weight"])
         if processors:
             self.select(processors[0])
 
     def get_selected(self):
-        all_processors = self.core.get("get_parameter_sets")("toolpath_processor")
+        all_processors = self.core.get_parameter_sets("toolpath_processor")
         current_name = self._proc_selector.get_value()
         return all_processors.get(current_name, None)
 
@@ -181,7 +181,7 @@ class ToolpathProcessors(pycam.Plugins.ListPluginBase):
 
     def _update_processors(self):
         selected = self.get_selected()
-        processors = self.core.get("get_parameter_sets")("toolpath_processor").values()
+        processors = self.core.get_parameter_sets("toolpath_processor").values()
         processors.sort(key=lambda item: item["weight"])
         choices = []
         for processor in processors:
@@ -229,16 +229,16 @@ class ToolpathProcessorMilling(pycam.Plugins.PluginBase):
                 "spindle_delay": 3,
                 "touch_off": None,
         }
-        self.core.get("register_parameter_set")("toolpath_processor",
+        self.core.register_parameter_set("toolpath_processor",
                 "milling", "Milling",
                 lambda params: _get_processor_filters(self.core, params),
                 parameters=parameters, weight=10)
         # initialize all parameters
-        self.core.get("set_parameter_values")("toolpath_processor", parameters)
+        self.core.set_parameter_values("toolpath_processor", parameters)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter_set")("toolpath_processor", 
+        self.core.unregister_parameter_set("toolpath_processor", 
                 "milling")
 
 
@@ -257,15 +257,15 @@ class ToolpathProcessorLaser(pycam.Plugins.PluginBase):
                 "motion_tolerance": 0.0,
                 "naive_tolerance": 0.0,
         }
-        self.core.get("register_parameter_set")("toolpath_processor",
+        self.core.register_parameter_set("toolpath_processor",
                 "laser", "Laser",
                 lambda params: _get_processor_filters(self.core, params),
                 parameters=parameters, weight=50)
         # initialize all parameters
-        self.core.get("set_parameter_values")("toolpath_processor", parameters)
+        self.core.set_parameter_values("toolpath_processor", parameters)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter_set")("toolpath_processor",
+        self.core.unregister_parameter_set("toolpath_processor",
                 "laser")
 

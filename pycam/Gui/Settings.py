@@ -28,6 +28,7 @@ import pycam.Toolpath
 import ConfigParser
 import StringIO
 import os
+from exceptions import AttributeError
 
 CONFIG_DIR = "pycam"
 
@@ -130,6 +131,25 @@ class Settings(dict):
             self.add_item(key)
         self.__getitem_orig(key)[self.SET_INDEX](value)
         self.__getitem_orig(key)[self.VALUE_INDEX] = value
+
+    def addmethod(self, name, method):
+        """
+        Add a class method
+        """
+        # Ensure that two methods with the same name can not be added
+        if hasattr(self.__class__, name):
+            raise AttributeError, \
+                "Tried to add existing method '%s'" % name
+        setattr(self.__class__, name, method)
+
+    def delmethod(self, name):
+        """
+        Remove a class method
+        """
+        if not hasattr(self.__class__, name):
+            raise AttributeError, \
+                "Tried to delete non-existent method '%s'" % name
+        delattr(self.__class__, name)
 
 
 class ProcessSettings(object):

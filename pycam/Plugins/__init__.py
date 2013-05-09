@@ -42,6 +42,7 @@ class PluginBase(object):
     CATEGORIES = []
     ICONS = {}
     ICON_SIZE = 23
+    CORE_METHODS = []
 
     def __init__(self, core, name):
         self.enabled = True
@@ -87,6 +88,30 @@ class PluginBase(object):
         self._gtk_handler_id_cache = []
         self.enabled = True
         self._state_items = []
+
+    def register_core_methods(self):
+        """
+        Used in setup(), add new methods to self.core from the
+        self.CORE_METHODS list, accessible as self.core.<method>() to
+        all plugins.
+        """
+        for name in self.CORE_METHODS:
+            func = getattr(self, name)
+            self.core.addmethod(name, func)
+            # FIXME this is the deprecated old method
+            # (looked like: self.core.set("foo_func", self.foo_func) )
+            self.core.set(name,func)
+
+    def unregister_core_methods(self):
+        """
+        Used in teardown(), remove all methods previously added to
+        self.core
+        """
+        for name in self.CORE_METHODS:
+            self.core.delmethod(name)
+            # FIXME this is the deprecated old method
+            # (looked like: self.core.set("foo_func", None) )
+            self.core.set(name, None)
 
     def register_state_item(self, path, get_func, set_func=None):
         group = (path, get_func, set_func)

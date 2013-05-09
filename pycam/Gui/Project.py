@@ -420,9 +420,9 @@ class ProjectGui(object):
         self.settings.register_event("parallel-processing-changed",
                 self.update_ode_settings)
         # configure drag-n-drop for config files and models
-        self.settings.set("configure-drag-drop-func",
-                self.configure_drag_and_drop)
-        self.settings.get("configure-drag-drop-func")(self.window)
+        self.settings.addmethod("configure_drag_drop_func",
+                                self.configure_drag_drop_func)
+        self.settings.configure_drag_drop_func(self.window)
         # other events
         self.window.connect("destroy", self.destroy)
         self.window.connect("delete-event", self.destroy)
@@ -715,7 +715,7 @@ class ProjectGui(object):
         self.settings.emit_event("model-change-after")
 
     def _browse_external_program_location(self, widget=None, key=None):
-        location = self.settings.get("get_filename_func")(title="Select the executable " \
+        location = self.settings.get_filename_func(title="Select the executable " \
                 + "for '%s'" % key, mode_load=True,
                 parent=self.preferences_window)
         if not location is None:
@@ -835,7 +835,7 @@ class ProjectGui(object):
         self.save_preferences()
         pass
 
-    def configure_drag_and_drop(self, obj):
+    def configure_drag_drop_func(self, obj):
         obj.connect("drag-data-received", self.handle_data_drop)
         flags = gtk.DEST_DEFAULT_ALL
         targets = [(key, gtk.TARGET_OTHER_APP, index)
@@ -882,7 +882,7 @@ class ProjectGui(object):
         if callable(filename):
             filename = filename()
         if not filename:
-            filename = self.settings.get("get_filename_func")("Loading model ...",
+            filename = self.settings.get_filename_func("Loading model ...",
                     mode_load=True, type_filter=FILTER_MODEL)
         if filename:
             file_type, importer = pycam.Importers.detect_file_type(filename)

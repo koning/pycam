@@ -68,18 +68,19 @@ def _get_filename_with_suffix(filename, type_filter):
 class FilenameDialog(pycam.Plugins.PluginBase):
 
     CATEGORIES = ["System"]
+    CORE_METHODS = ['get_filename_func']
 
     def setup(self):
         import gtk
         self._gtk = gtk
         self.last_dirname = None
-        self.core.set("get_filename_func", self.get_filename_dialog)
+        self.register_core_methods()
         return True
 
     def teardown(self):
-        self.core.set("get_filename_func", None)
+        self.unregister_core_methods()
 
-    def get_filename_dialog(self, title="Choose file ...", mode_load=False,
+    def get_filename_func(self, title="Choose file ...", mode_load=False,
             type_filter=None, filename_templates=None, filename_extension=None,
             parent=None, extra_widget=None):
         gtk = self._gtk

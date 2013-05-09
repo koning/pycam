@@ -165,7 +165,7 @@ class ToolpathSimulation(pycam.Plugins.PluginBase):
 
     def show_simulation(self):
         if self._toolpath_moves and self.core.get("show_simulation"):
-            self.core.get("draw_toolpath_moves_func")(self._toolpath_moves)
+            self.core.draw_toolpath_moves_func(self._toolpath_moves)
 
     def update_toolpath_simulation_ode(self, widget=None, toolpath=None):
         import pycam.Simulation.ODEBlocks as ODEBlocks

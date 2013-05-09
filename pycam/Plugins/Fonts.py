@@ -198,8 +198,7 @@ class Fonts(pycam.Plugins.PluginBase):
             text_model.export(unit=self.core.get("unit")).write(text_buffer)
             text_buffer.seek(0)
             text = text_buffer.read()
-            self.core.get("clipboard-set")(text,
-                    targets="svg")
+            self.core.clipboard_set(text, targets="svg")
 
     def update_font_dialog_preview(self, widget=None, event=None):
         if not self.font_selector:

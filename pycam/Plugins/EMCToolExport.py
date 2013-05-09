@@ -66,7 +66,7 @@ class EMCToolExport(pycam.Plugins.PluginBase):
         if not filename:
             # TODO: separate this away from Gui/Project.py
             # TODO: implement "last_model_filename" in core
-            filename = self.core.get("get_filename_func")("Save toolpath to ...",
+            filename = self.core.get_filename_func("Save toolpath to ...",
                     mode_load=False, type_filter=FILTER_EMC_TOOL,
                     filename_templates=(self._last_emc_tool_file,
                             self.core.get("last_model_filename")))

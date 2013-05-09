@@ -43,20 +43,20 @@ class ProcessStrategySlicing(pycam.Plugins.PluginBase):
                 "material_allowance": 0,
                 "path_pattern": None,
         }
-        self.core.get("register_parameter_set")("process", "slicing",
+        self.core.register_parameter_set("process", "slicing",
                 "Slice removal", self.run_process, parameters=parameters,
                 weight=10)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter_set")("process", "slicing")
+        self.core.unregister_parameter_set("process", "slicing")
 
     def run_process(self, process, tool_radius, (low, high)):
         line_distance = _get_line_distance(tool_radius,
                 process["parameters"]["overlap"])
         path_generator = pycam.PathGenerators.PushCutter.PushCutter(waterlines=False)
         path_pattern = process["parameters"]["path_pattern"]
-        path_get_func = self.core.get("get_parameter_sets")(
+        path_get_func = self.core.get_parameter_sets(
                 "path_pattern")[path_pattern["name"]]["func"]
         grid_func, kwargs = path_get_func(path_pattern)
         motion_grid = grid_func((low, high),
@@ -77,13 +77,13 @@ class ProcessStrategyContour(pycam.Plugins.PluginBase):
                 "overlap": 0.8,
                 "milling_style": pycam.Toolpath.MotionGrid.MILLING_STYLE_IGNORE,
         }
-        self.core.get("register_parameter_set")("process", "contour",
+        self.core.register_parameter_set("process", "contour",
                 "Waterline", self.run_process, parameters=parameters,
                 weight=20)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter_set")("process", "contour")
+        self.core.unregister_parameter_set("process", "contour")
 
     def run_process(self, process, tool_radius, (low, high)):
         line_distance = _get_line_distance(tool_radius,
@@ -109,20 +109,20 @@ class ProcessStrategySurfacing(pycam.Plugins.PluginBase):
                 "material_allowance": 0,
                 "path_pattern": None,
         }
-        self.core.get("register_parameter_set")("process", "surfacing",
+        self.core.register_parameter_set("process", "surfacing",
                 "Surfacing", self.run_process, parameters=parameters,
                 weight=50)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter_set")("process", "surfacing")
+        self.core.unregister_parameter_set("process", "surfacing")
 
     def run_process(self, process, tool_radius, (low, high)):
         line_distance = _get_line_distance(tool_radius,
                 process["parameters"]["overlap"])
         path_generator = pycam.PathGenerators.DropCutter.DropCutter()
         path_pattern = process["parameters"]["path_pattern"]
-        path_get_func = self.core.get("get_parameter_sets")(
+        path_get_func = self.core.get_parameter_sets(
                 "path_pattern")[path_pattern["name"]]["func"]
         grid_func, kwargs = path_get_func(path_pattern)
         motion_grid = grid_func((low, high), None,
@@ -145,13 +145,13 @@ class ProcessStrategyEngraving(pycam.Plugins.PluginBase):
                 "trace_models": [],
                 "pocketing_type": pycam.Toolpath.MotionGrid.POCKETING_TYPE_NONE,
         }
-        self.core.get("register_parameter_set")("process", "engraving",
+        self.core.register_parameter_set("process", "engraving",
                 "Engraving", self.run_process, parameters=parameters,
                 weight=80)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter_set")("process", "engraving")
+        self.core.unregister_parameter_set("process", "engraving")
 
     def run_process(self, process, tool_radius, (low, high)):
         path_generator = pycam.PathGenerators.EngraveCutter.EngraveCutter()

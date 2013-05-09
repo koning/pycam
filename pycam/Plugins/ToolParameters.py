@@ -37,13 +37,13 @@ class ToolParamRadius(pycam.Plugins.PluginBase):
                     self.core.emit_event("tool-changed"))
         self.control.set_conversion(set_conv=lambda value: value * 2.0,
                 get_conv=lambda value: value / 2.0)
-        self.core.get("register_parameter")("tool", "radius", self.control)
+        self.core.register_parameter("tool", "radius", self.control)
         self.core.register_ui("tool_size", "Tool Diameter",
                 self.control.get_widget(), weight=10)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter")("tool", "radius")
+        self.core.unregister_parameter("tool", "radius")
         self.core.unregister_ui("tool_size", self.control.get_widget())
 
 
@@ -56,7 +56,7 @@ class ToolParamTorusRadius(pycam.Plugins.PluginBase):
         self.control = pycam.Gui.ControlsGTK.InputNumber(lower=0, upper=999,
                 digits=4, change_handler=lambda widget=None: \
                     self.core.emit_event( "tool-changed"))
-        self.core.get("register_parameter")("tool", "torus_radius",
+        self.core.register_parameter("tool", "torus_radius",
                 self.control)
         self.core.register_ui("tool_size", "Torus Radius",
                 self.control.get_widget(), weight=50)
@@ -64,7 +64,7 @@ class ToolParamTorusRadius(pycam.Plugins.PluginBase):
 
     def teardown(self):
         self.core.unregister_ui("tool_size", self.control.get_widget())
-        self.core.get("unregister_parameter")("tool", "torus_radius")
+        self.core.unregister_parameter("tool", "torus_radius")
 
 
 class ToolParamFeedrate(pycam.Plugins.PluginBase):
@@ -76,7 +76,7 @@ class ToolParamFeedrate(pycam.Plugins.PluginBase):
         self.control = pycam.Gui.ControlsGTK.InputNumber(lower=0, upper=50000,
                 digits=0, change_handler=lambda widget=None: \
                     self.core.emit_event("tool-changed"))
-        self.core.get("register_parameter")("tool", "feedrate", self.control)
+        self.core.register_parameter("tool", "feedrate", self.control)
         self.core.register_ui("tool_speed", "Feedrate",
                 self.control.get_widget(), weight=10)
         self.core.register_chain("toolpath_filters",
@@ -85,7 +85,7 @@ class ToolParamFeedrate(pycam.Plugins.PluginBase):
 
     def teardown(self):
         self.core.unregister_ui("tool_speed", self.control.get_widget())
-        self.core.get("unregister_parameter")("tool", "feedrate")
+        self.core.unregister_parameter("tool", "feedrate")
         self.core.unregister_chain("toolpath_filters",
                 self.get_toolpath_filters)
 
@@ -103,7 +103,7 @@ class ToolParamSpindleSpeed(pycam.Plugins.PluginBase):
         self.control = pycam.Gui.ControlsGTK.InputNumber(lower=1, upper=500000,
                 digits=0, change_handler=lambda widget=None: \
                     self.core.emit_event("tool-changed"))
-        self.core.get("register_parameter")("tool", "spindle_speed",
+        self.core.register_parameter("tool", "spindle_speed",
                 self.control)
         self.core.register_ui("tool_speed", "Spindle Speed",
                 self.control.get_widget(), weight=50)
@@ -113,7 +113,7 @@ class ToolParamSpindleSpeed(pycam.Plugins.PluginBase):
 
     def teardown(self):
         self.core.unregister_ui("tool_speed", self.control.get_widget())
-        self.core.get("unregister_parameter")("tool", "spindle_speed")
+        self.core.unregister_parameter("tool", "spindle_speed")
         self.core.unregister_chain("toolpath_filters",
                 self.get_toolpath_filters)
 

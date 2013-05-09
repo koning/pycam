@@ -89,8 +89,7 @@ class ToolpathExport(pycam.Plugins.PluginBase):
             self.log.warn("No toolpath processor selected")
             return
         filter_func = processor["func"]
-        filter_params = self.core.get("get_parameter_values")(
-                "toolpath_processor")
+        filter_params = self.core.get_parameter_values("toolpath_processor")
         settings_filters = filter_func(filter_params)
         # TODO: get "public" filters (metric, ...)
         common_filters = []
@@ -101,7 +100,7 @@ class ToolpathExport(pycam.Plugins.PluginBase):
             filename_extension = None
         # TODO: separate this away from Gui/Project.py
         # TODO: implement "last_model_filename" in core
-        filename = self.core.get("get_filename_func")("Save toolpath to ...",
+        filename = self.core.get_filename_func("Save toolpath to ...",
                 mode_load=False, type_filter=FILTER_GCODE,
                 filename_templates=(self._last_toolpath_file, self.core.get("last_model_filename")),
                 filename_extension=filename_extension)

@@ -33,14 +33,14 @@ class OpenGLViewAxes(pycam.Plugins.PluginBase):
         import OpenGL.GL
         self._GL = OpenGL.GL
         self.core.register_event("visualize-items", self.draw_axes)
-        self.core.get("register_display_item")("show_axes",
+        self.core.register_display_item("show_axes",
                 "Show Coordinate System", 50)
         self.core.emit_event("visual-item-updated")
         return True
 
     def teardown(self):
         self.core.unregister_event("visualize-items", self.draw_axes)
-        self.core.get("unregister_display_item")("show_axes")
+        self.core.unregister_display_item("show_axes")
         self.core.emit_event("visual-item-updated")
 
     def draw_axes(self):

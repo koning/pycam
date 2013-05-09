@@ -37,7 +37,7 @@ class GCodeSafetyHeight(pycam.Plugins.PluginBase):
         self.control = pycam.Gui.ControlsGTK.InputNumber(digits=0,
                 lower=-1000, upper=1000, change_handler=lambda *args: \
                     self.core.emit_event("visual-item-updated"))
-        self.core.get("register_parameter")("toolpath_processor",
+        self.core.register_parameter("toolpath_processor",
                 "safety_height", self.control)
         self.core.register_ui("gcode_general_parameters", "Safety Height",
                 self.control.get_widget(), weight=20)
@@ -49,7 +49,7 @@ class GCodeSafetyHeight(pycam.Plugins.PluginBase):
                 self.get_toolpath_filters)
         self.core.unregister_ui("gcode_general_parameters",
                 self.control.get_widget())
-        self.core.get("unregister_parameter")("toolpath_processor",
+        self.core.unregister_parameter("toolpath_processor",
                 "safety_height")
 
     @Filters.toolpath_filter("settings", "safety_height")
@@ -65,7 +65,7 @@ class GCodeFilenameExtension(pycam.Plugins.PluginBase):
 
     def setup(self):
         self.control = pycam.Gui.ControlsGTK.InputString(max_length=6)
-        self.core.get("register_parameter")("toolpath_processor",
+        self.core.register_parameter("toolpath_processor",
                 "filename_extension", self.control)
         self.core.register_ui("gcode_general_parameters",
                 "Custom GCode filename extension",
@@ -75,7 +75,7 @@ class GCodeFilenameExtension(pycam.Plugins.PluginBase):
     def teardown(self):
         self.core.unregister_ui("gcode_general_parameters",
                 self.control.get_widget())
-        self.core.get("unregister_parameter")("toolpath_processor",
+        self.core.unregister_parameter("toolpath_processor",
                 "filename_extension")
 
     @Filters.toolpath_filter("settings", "filename_extension")
@@ -101,7 +101,7 @@ class GCodeStepWidth(pycam.Plugins.PluginBase):
                     increment=0.00005)
             self.core.register_ui("gcode_step_width", key.upper(),
                     control.get_widget(), weight="xyz".index(key))
-            self.core.get("register_parameter")("toolpath_processor",
+            self.core.register_parameter("toolpath_processor",
                     "step_width_%s" % key, control)
             self.controls.append((key, control))
         self.core.register_chain("toolpath_filters", self.get_toolpath_filters)
@@ -112,7 +112,7 @@ class GCodeStepWidth(pycam.Plugins.PluginBase):
                 self.get_toolpath_filters)
         for key, control in self.controls:
             self.core.unregister_ui("gcode_step_width", control)
-            self.core.get("unregister_parameter")("toolpath_processor",
+            self.core.unregister_parameter("toolpath_processor",
                     "step_width_%s" % key)
         self.core.unregister_ui("gcode_general_parameters",
                 self._table.get_widget())
@@ -138,13 +138,13 @@ class GCodeSpindle(pycam.Plugins.PluginBase):
         self.core.register_ui("gcode_spindle",
                 "Delay (in seconds) after start/stop",
                 self.spindle_delay.get_widget(), weight=50)
-        self.core.get("register_parameter")("toolpath_processor",
+        self.core.register_parameter("toolpath_processor",
                 "spindle_delay", self.spindle_delay)
         self.spindle_enable = pycam.Gui.ControlsGTK.InputCheckBox(
                 change_handler=self.update_widgets)
         self.core.register_ui("gcode_spindle", "Start / Stop Spindle (M3/M5)",
                 self.spindle_enable.get_widget(), weight=10)
-        self.core.get("register_parameter")("toolpath_processor",
+        self.core.register_parameter("toolpath_processor",
                 "spindle_enable", self.spindle_enable)
         self.core.register_chain("toolpath_filters", self.get_toolpath_filters)
         self.update_widgets()
@@ -159,9 +159,9 @@ class GCodeSpindle(pycam.Plugins.PluginBase):
                 self.spindle_enable.get_widget())
         self.core.unregister_ui_section("gcode_spindle")
         self.core.unregister_ui("gcode_preferences", self._table.get_widget())
-        self.core.get("unregister_parameter")("toolpath_processor",
+        self.core.unregister_parameter("toolpath_processor",
                 "spindle_enable")
-        self.core.get("unregister_parameter")("toolpath_processor",
+        self.core.unregister_parameter("toolpath_processor",
                 "spindle_delay")
 
     def update_widgets(self, widget=None):
@@ -190,12 +190,12 @@ class GCodeCornerStyle(pycam.Plugins.PluginBase):
         self.motion_tolerance = pycam.Gui.ControlsGTK.InputNumber(digits=3)
         self.core.register_ui("gcode_corner_style", "Motion blending tolerance",
                 self.motion_tolerance.get_widget(), weight=30)
-        self.core.get("register_parameter")("toolpath_processor",
+        self.core.register_parameter("toolpath_processor",
                 "motion_tolerance", self.motion_tolerance)
         self.naive_tolerance = pycam.Gui.ControlsGTK.InputNumber(digits=3)
         self.core.register_ui("gcode_corner_style", "Naive CAM tolerance",
                 self.naive_tolerance.get_widget(), weight=50)
-        self.core.get("register_parameter")("toolpath_processor",
+        self.core.register_parameter("toolpath_processor",
                 "naive_tolerance", self.naive_tolerance)
         self.path_mode = pycam.Gui.ControlsGTK.InputChoice((
                 ("Exact path mode (G61)", CORNER_STYLE_EXACT_PATH),
@@ -207,7 +207,7 @@ class GCodeCornerStyle(pycam.Plugins.PluginBase):
         self.path_mode.get_widget().connect("changed", self.update_widgets)
         self.core.register_ui("gcode_corner_style", "Path mode",
                 self.path_mode.get_widget(), weight=10)
-        self.core.get("register_parameter")("toolpath_processor", "path_mode",
+        self.core.register_parameter("toolpath_processor", "path_mode",
                 self.path_mode)
         self.core.register_chain("toolpath_filters", self.get_toolpath_filters)
         self.update_widgets()
@@ -225,7 +225,7 @@ class GCodeCornerStyle(pycam.Plugins.PluginBase):
         self.core.unregister_ui_section("gcode_corner_style")
         self.core.unregister_ui("gcode_preferences", self._table.get_widget())
         for name in ("motion_tolerance", "naive_tolerance", "path_mode"):
-            self.core.get("unregister_parameter")("toolpath_processor", name)
+            self.core.unregister_parameter("toolpath_processor", name)
 
     def update_widgets(self, widget=None):
         enable_tolerances = (self.path_mode.get_value() == \

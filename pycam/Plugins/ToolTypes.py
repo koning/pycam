@@ -52,13 +52,13 @@ class ToolTypeBallNose(pycam.Plugins.PluginBase):
                 "feedrate": 300,
                 "spindle_speed": 1000,
         }
-        self.core.get("register_parameter_set")("tool", "ballnose",
+        self.core.register_parameter_set("tool", "ballnose",
                 "Ball nose", self.get_tool, parameters=parameters,
                 weight=20)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter_set")("tool", "ballnose")
+        self.core.unregister_parameter_set("tool", "ballnose")
 
     @tool_params_and_filters("radius")
     def get_tool(self, radius):
@@ -77,13 +77,13 @@ class ToolTypeBullNose(pycam.Plugins.PluginBase):
                 "feedrate": 300,
                 "spindle_speed": 1000,
         }
-        self.core.get("register_parameter_set")("tool", "bullnose",
+        self.core.register_parameter_set("tool", "bullnose",
                 "Bull nose", self.get_tool, parameters=parameters,
                 weight=30)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter_set")("tool", "bullnose")
+        self.core.unregister_parameter_set("tool", "bullnose")
 
     @tool_params_and_filters("radius", "torus_radius")
     def get_tool(self, radius, torus_radius):
@@ -100,12 +100,12 @@ class ToolTypeFlat(pycam.Plugins.PluginBase):
                 "feedrate": 300,
                 "spindle_speed": 1000,
         }
-        self.core.get("register_parameter_set")("tool", "flat", "Flat bottom",
+        self.core.register_parameter_set("tool", "flat", "Flat bottom",
                 self.get_tool, parameters=parameters, weight=10)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter_set")("tool", "flat")
+        self.core.unregister_parameter_set("tool", "flat")
 
     @tool_params_and_filters("radius")
     def get_tool(self, radius):

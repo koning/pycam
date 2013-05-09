@@ -136,6 +136,6 @@ class MemoryAnalyzer(pycam.Plugins.PluginBase):
         writer.writerow(("Type", "Count", "Size (all) [kB]", "Average size [B]"))
         for row in self.model:
             writer.writerow(row)
-        self.core.get("clipboard-set")(text_buffer.getvalue())
+        self.core.clipboard_set(text_buffer.getvalue())
         text_buffer.close()
 

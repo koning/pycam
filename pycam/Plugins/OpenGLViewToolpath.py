@@ -29,18 +29,19 @@ class OpenGLViewToolpath(pycam.Plugins.PluginBase):
 
     DEPENDS = ["OpenGLWindow", "Toolpaths"]
     CATEGORIES = ["Toolpath", "Visualization", "OpenGL"]
+    CORE_METHODS = ["draw_toolpath_moves_func"]
 
     def setup(self):
         import OpenGL.GL
         self._GL = OpenGL.GL
         self.core.register_event("visualize-items", self.draw_toolpaths)
-        self.core.get("register_color")("color_toolpath_cut", "Toolpath cut",
+        self.core.register_color("color_toolpath_cut", "Toolpath cut",
                 60)
-        self.core.get("register_color")("color_toolpath_return",
+        self.core.register_color("color_toolpath_return",
                 "Toolpath rapid", 70)
         self.core.register_chain("get_draw_dimension", self.get_draw_dimension)
-        self.core.get("register_display_item")("show_toolpath", "Show Toolpath", 30),
-        self.core.set("draw_toolpath_moves_func", self._draw_toolpath_moves)
+        self.core.register_display_item("show_toolpath", "Show Toolpath", 30),
+        self.register_core_methods()
         self.core.emit_event("visual-item-updated")
         return True
 
@@ -48,10 +49,10 @@ class OpenGLViewToolpath(pycam.Plugins.PluginBase):
         self.core.unregister_chain("get_draw_dimension",
                 self.get_draw_dimension)
         self.core.unregister_event("visualize-items", self.draw_toolpaths)
-        self.core.get("unregister_color")("color_toolpath_cut")
-        self.core.get("unregister_color")("color_toolpath_return")
-        self.core.get("unregister_display_item")("show_toolpath")
-        del self.core["draw_toolpath_moves_func"]
+        self.core.unregister_color("color_toolpath_cut")
+        self.core.unregister_color("color_toolpath_return")
+        self.core.unregister_display_item("show_toolpath")
+        self.unregister_core_methods()
         self.core.emit_event("visual-item-updated")
 
     def get_draw_dimension(self, low, high):
@@ -82,7 +83,7 @@ class OpenGLViewToolpath(pycam.Plugins.PluginBase):
                 self.log.warn("No toolpath processor selected")
                 return
             filter_func = processor["func"]
-            filter_params = self.core.get("get_parameter_values")(
+            filter_params = self.core.get_parameter_values(
                     "toolpath_processor")
             settings_filters = filter_func(filter_params)
             for toolpath in self.core.get("toolpaths").get_visible():
@@ -90,7 +91,7 @@ class OpenGLViewToolpath(pycam.Plugins.PluginBase):
                 #moves = toolpath.get_moves_for_opengl(self.core.get("gcode_safety_height"))
                 #self._draw_toolpath_moves2(moves)
                 moves = toolpath.get_basic_moves(filters=settings_filters)
-                self._draw_toolpath_moves(moves)
+                self.draw_toolpath_moves_func(moves)
             
     def _draw_toolpath_moves2(self, paths):
         GL = self._GL
@@ -119,7 +120,7 @@ class OpenGLViewToolpath(pycam.Plugins.PluginBase):
             coords.unbind()
 
     ## Simulate still depends on this pathway
-    def _draw_toolpath_moves(self, moves):
+    def draw_toolpath_moves_func(self, moves):
         GL = self._GL
         GL.glDisable(GL.GL_LIGHTING)
         show_directions = self.core.get("show_directions")

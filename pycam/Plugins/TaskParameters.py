@@ -35,7 +35,7 @@ class TaskParamCollisionModels(pycam.Plugins.PluginBase):
                 change_handler=lambda widget=None: \
                     self.core.emit_event("task-changed"))
         self.control.get_widget().set_size_request(240, -1)
-        self.core.get("register_parameter")("task", "collision_models",
+        self.core.register_parameter("task", "collision_models",
                 self.control)
         self.core.register_ui("task_models", "", self.control.get_widget(),
                 weight=5)
@@ -43,7 +43,7 @@ class TaskParamCollisionModels(pycam.Plugins.PluginBase):
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter")("task", "collision_models")
+        self.core.unregister_parameter("task", "collision_models")
         self.core.unregister_ui("task_models", self.control.get_widget())
         self.core.unregister_event("model-list-changed", self._update_models)
 
@@ -65,14 +65,14 @@ class TaskParamTool(pycam.Plugins.PluginBase):
         self.control = pycam.Gui.ControlsGTK.InputChoice([],
                 change_handler=lambda widget=None: \
                     self.core.emit_event("task-changed"))
-        self.core.get("register_parameter")("task", "tool", self.control)
+        self.core.register_parameter("task", "tool", self.control)
         self.core.register_ui("task_components", "Tool",
                 self.control.get_widget(), weight=10)
         self.core.register_event("tool-list-changed", self._update_tools)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter")("task", "tool")
+        self.core.unregister_parameter("task", "tool")
         self.core.unregister_ui("task_models", self.control.get_widget())
         self.core.unregister_event("tool-list-changed", self._update_tools)
 
@@ -93,14 +93,14 @@ class TaskParamProcess(pycam.Plugins.PluginBase):
         self.control = pycam.Gui.ControlsGTK.InputChoice([],
                 change_handler=lambda widget=None: \
                     self.core.emit_event("task-changed"))
-        self.core.get("register_parameter")("task", "process", self.control)
+        self.core.register_parameter("task", "process", self.control)
         self.core.register_ui("task_components", "Process",
                 self.control.get_widget(), weight=20)
         self.core.register_event("process-list-changed", self._update_processes)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter")("task", "process")
+        self.core.unregister_parameter("task", "process")
         self.core.unregister_ui("task_models", self.control.get_widget())
         self.core.unregister_event("process-list-changed", self._update_processes)
 
@@ -121,14 +121,14 @@ class TaskParamBounds(pycam.Plugins.PluginBase):
         self.control = pycam.Gui.ControlsGTK.InputChoice([],
                 change_handler=lambda widget=None: \
                     self.core.emit_event("task-changed"))
-        self.core.get("register_parameter")("task", "bounds", self.control)
+        self.core.register_parameter("task", "bounds", self.control)
         self.core.register_ui("task_components", "Bounds",
                 self.control.get_widget(), weight=30)
         self.core.register_event("bounds-list-changed", self._update_bounds)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter")("task", "bounds")
+        self.core.unregister_parameter("task", "bounds")
         self.core.unregister_ui("task_models", self.control.get_widget())
         self.core.unregister_event("bounds-list-changed", self._update_bounds)
 

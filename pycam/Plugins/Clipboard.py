@@ -41,6 +41,7 @@ class Clipboard(pycam.Plugins.PluginBase):
     UI_FILE = "clipboard.ui"
     DEPENDS = ["Models"]
     CATEGORIES = ["System"]
+    CORE_METHODS = ['clipboard_set']
 
     def setup(self):
         if self.gui:
@@ -48,7 +49,7 @@ class Clipboard(pycam.Plugins.PluginBase):
             self._gtk = gtk
             self._gtk_handlers = []
             self.clipboard = self._gtk.clipboard_get()
-            self.core.set("clipboard-set", self._copy_text_to_clipboard)
+            self.register_core_methods()
             self._gtk_handlers.append((self.clipboard, "owner-change",
                     self._update_clipboard_widget))
             # menu item and shortcut
@@ -81,7 +82,7 @@ class Clipboard(pycam.Plugins.PluginBase):
             self.core.unregister_ui("edit_menu", self.paste_action)
             self.unregister_event_handlers(self._event_handlers)
             self.unregister_gtk_handlers(self._gtk_handlers)
-            self.core.set("clipboard-set", None)
+            self.unregister_core_methods()
 
     def _get_exportable_models(self):
         models = self.core.get("models").get_selected()
@@ -100,7 +101,7 @@ class Clipboard(pycam.Plugins.PluginBase):
         paste_button = self.gui.get_object("PasteModelFromClipboard")
         paste_button.set_sensitive(not data is None)
 
-    def _copy_text_to_clipboard(self, text, targets=None):
+    def clipboard_set(self, text, targets=None):
         if targets is None:
             self.clipboard.set_text(text)
         else:
@@ -142,7 +143,7 @@ class Clipboard(pycam.Plugins.PluginBase):
             targets = CLIPBOARD_TARGETS["svg"]
         else:
             targets = CLIPBOARD_TARGETS["stl"]
-        self._copy_text_to_clipboard(text_buffer.read(), targets)
+        self.clipboard_set(text_buffer.read(), targets)
 
     def _get_data_and_importer_from_clipboard(self):
         for targets, filename in ((CLIPBOARD_TARGETS["svg"], "foo.svg"),

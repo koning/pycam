@@ -38,13 +38,13 @@ class PathPatternSpiral(pycam.Plugins.PluginBase):
                 "spiral_direction": None,
                 "rounded_corners": False,
         }
-        self.core.get("register_parameter_set")("path_pattern", "spiral",
+        self.core.register_parameter_set("path_pattern", "spiral",
                 "Spiral", self.get_grid_generator, parameters=parameters,
                 weight=30)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter_set")("path_pattern", "spiral")
+        self.core.unregister_parameter_set("path_pattern", "spiral")
 
     def get_grid_generator(self, pattern):
         kwargs = pattern["parameters"]
@@ -63,13 +63,13 @@ class PathPatternGrid(pycam.Plugins.PluginBase):
                 "milling_style": pycam.Toolpath.MotionGrid.MILLING_STYLE_IGNORE,
                 "grid_direction": pycam.Toolpath.MotionGrid.GRID_DIRECTION_X,
         }
-        self.core.get("register_parameter_set")("path_pattern", "grid",
+        self.core.register_parameter_set("path_pattern", "grid",
                 "Grid", self.get_grid_generator, parameters=parameters,
                 weight=10)
         return True
 
     def teardown(self):
-        self.core.get("unregister_parameter_set")("path_pattern", "grid")
+        self.core.unregister_parameter_set("path_pattern", "grid")
 
     def get_grid_generator(self, pattern):
         kwargs = pattern["parameters"]

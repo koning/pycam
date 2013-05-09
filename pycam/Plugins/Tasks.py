@@ -74,7 +74,7 @@ class Tasks(pycam.Plugins.ListPluginBase):
                 parameters_box.pack_start(frame, expand=False)
             self.core.register_ui_section("task_parameters",
                     add_parameter_widget, clear_parameter_widgets)
-            self.core.get("register_parameter_group")("task",
+            self.core.register_parameter_group("task",
                     changed_set_event="task-type-changed",
                     changed_set_list_event="task-type-list-changed",
                     get_current_set_func=self._get_type)
@@ -155,7 +155,7 @@ class Tasks(pycam.Plugins.ListPluginBase):
         cell.set_property("text", task["name"])
 
     def _get_type(self, name=None):
-        types = self.core.get("get_parameter_sets")("task")
+        types = self.core.get_parameter_sets("task")
         if name is None:
             # find the currently selected one
             selector = self.gui.get_object("TaskTypeSelector")
@@ -184,7 +184,7 @@ class Tasks(pycam.Plugins.ListPluginBase):
         selected = self._get_type()
         model = self.gui.get_object("TaskTypeList")
         model.clear()
-        types = self.core.get("get_parameter_sets")("task").values()
+        types = self.core.get_parameter_sets("task").values()
         types.sort(key=lambda item: item["weight"])
         for one_type in types:
             model.append((one_type["label"], one_type["name"]))
@@ -225,7 +225,7 @@ class Tasks(pycam.Plugins.ListPluginBase):
             type_name = task["type"]
             self.select_type(type_name)
             one_type = self._get_type(type_name)
-            self.core.get("set_parameter_values")("task", task["parameters"])
+            self.core.set_parameter_values("task", task["parameters"])
             control_box.show()
             self.core.unblock_event("task-type-changed")
             self.core.unblock_event("task-changed")
@@ -242,11 +242,11 @@ class Tasks(pycam.Plugins.ListPluginBase):
             task = tasks[0]
             task["type"] = task_type["name"]
             parameters = task["parameters"]
-            parameters.update(self.core.get("get_parameter_values")("task"))
+            parameters.update(self.core.get_parameter_values("task"))
             details_box.show()
 
     def _task_new(self, *args):
-        types = self.core.get("get_parameter_sets")("task").values()
+        types = self.core.get_parameter_sets("task").values()
         types.sort(key=lambda item: item["weight"])
         one_type = types[0]
         name = get_non_conflicting_name("Task #%d",
@@ -311,7 +311,7 @@ class Tasks(pycam.Plugins.ListPluginBase):
         # run the toolpath generation
         progress.update(text="Starting the toolpath generation")
         try:
-            func = self.core.get("get_parameter_sets")(
+            func = self.core.get_parameter_sets(
                     "task")[task["type"]]["func"]
             toolpath = func(task, callback=draw_callback)
         except Exception:

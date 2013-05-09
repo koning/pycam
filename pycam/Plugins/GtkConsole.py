@@ -140,7 +140,7 @@ class GtkConsole(pycam.Plugins.PluginBase):
     def _copy_to_clipboard(self, widget=None):
         start, end = self._console_buffer.get_bounds()
         content = self._console_buffer.get_text(start, end)
-        self.core.get("clipboard-set")(content)
+        self.core.clipboard_set(content)
 
     def _toggle_window(self, widget=None, value=None, action=None):
         toggle_checkbox = self.gui.get_object("ToggleConsoleWindow")

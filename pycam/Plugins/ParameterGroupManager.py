@@ -27,30 +27,25 @@ import pycam.Plugins
 class ParameterGroupManager(pycam.Plugins.PluginBase):
 
     CATEGORIES = ["Plugins"]
+    CORE_METHODS = [
+        "get_parameter_values",
+        "set_parameter_values",
+        "get_parameter_sets",
+        "register_parameter_group",
+        "register_parameter_set",
+        "register_parameter",
+        "unregister_parameter_group",
+        "unregister_parameter_set",
+        "unregister_parameter",
+        ]
 
     def setup(self):
         self._groups = {}
-        self.core.set("get_parameter_values", self.get_parameter_values)
-        self.core.set("set_parameter_values", self.set_parameter_values)
-        self.core.set("get_parameter_sets", self.get_parameter_sets)
-        self.core.set("register_parameter_group", self.register_parameter_group)
-        self.core.set("register_parameter_set", self.register_parameter_set)
-        self.core.set("register_parameter", self.register_parameter)
-        self.core.set("unregister_parameter_group",
-                self.unregister_parameter_group)
-        self.core.set("unregister_parameter_set",
-                self.unregister_parameter_set)
-        self.core.set("unregister_parameter",
-                self.unregister_parameter)
+        self.register_core_methods()
         return True
 
     def teardown(self):
-        for name in ("set_parameter_values",
-                "get_parameter_values", "get_parameter_sets",
-                "register_parameter_set", "register_parameter_group",
-                "register_parameter", "unregister_parameter_set",
-                "unregister_parameter_group", "unregister_parameter"):
-            self.core.set(name, None)
+        self.unregister_core_methods()
 
     def register_parameter_group(self, name, changed_set_event=None,
             changed_set_list_event=None, get_current_set_func=None):

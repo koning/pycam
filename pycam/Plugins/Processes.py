@@ -71,7 +71,7 @@ class Processes(pycam.Plugins.ListPluginBase):
                 parameters_box.pack_start(frame, expand=False)
             self.core.register_ui_section("process_parameters",
                     add_parameter_widget, clear_parameter_widgets)
-            self.core.get("register_parameter_group")("process",
+            self.core.register_parameter_group("process",
                     changed_set_event="process-strategy-changed",
                     changed_set_list_event="process-strategy-list-changed",
                     get_current_set_func=self._get_strategy)
@@ -145,7 +145,7 @@ class Processes(pycam.Plugins.ListPluginBase):
         selected = self._get_strategy()
         model = self.gui.get_object("StrategyModel")
         model.clear()
-        strategies = list(self.core.get("get_parameter_sets")("process").values())
+        strategies = list(self.core.get_parameter_sets("process").values())
         strategies.sort(key=lambda item: item["weight"])
         for strategy in strategies:
             model.append((strategy["label"], strategy["name"]))
@@ -169,7 +169,7 @@ class Processes(pycam.Plugins.ListPluginBase):
             self.select_strategy(selected["name"])
 
     def _get_strategy(self, name=None):
-        strategies = self.core.get("get_parameter_sets")("process")
+        strategies = self.core.get_parameter_sets("process")
         if name is None:
             # find the currently selected one
             selector = self.gui.get_object("StrategySelector")
@@ -207,8 +207,8 @@ class Processes(pycam.Plugins.ListPluginBase):
             # E.g. this changes the "overlap" value from 10 to 60 when
             # switching from slicing to surfacing.
             if process["strategy"] and process["strategy"] in \
-                    self.core.get("get_parameter_sets")("process"):
-                old_strategy = self.core.get("get_parameter_sets")("process")[process["strategy"]]
+                    self.core.get_parameter_sets("process"):
+                old_strategy = self.core.get_parameter_sets("process")[process["strategy"]]
                 if process["strategy"] != strategy["name"]:
                     changes = {}
                     common_keys = [key for key in old_strategy["parameters"] \
@@ -217,10 +217,10 @@ class Processes(pycam.Plugins.ListPluginBase):
                         if process["parameters"][key] == \
                                 old_strategy["parameters"][key]:
                             changes[key] = strategy["parameters"][key]
-                        self.core.get("set_parameter_values")("process", changes)
+                        self.core.set_parameter_values("process", changes)
             process["strategy"] = strategy["name"]
             parameters = process["parameters"]
-            parameters.update(self.core.get("get_parameter_values")("process"))
+            parameters.update(self.core.get_parameter_values("process"))
             control_box.show()
             self._trigger_table_update()
 
@@ -235,14 +235,14 @@ class Processes(pycam.Plugins.ListPluginBase):
             strategy_name = process["strategy"]
             self.select_strategy(strategy_name)
             strategy = self._get_strategy(strategy_name)
-            self.core.get("set_parameter_values")("process", process["parameters"])
+            self.core.set_parameter_values("process", process["parameters"])
             control_box.show()
             self.core.unblock_event("process-strategy-changed")
             self.core.unblock_event("process-changed")
             self.core.emit_event("process-strategy-changed")
         
     def _process_new(self, *args):
-        strategies = self.core.get("get_parameter_sets")("process").values()
+        strategies = self.core.get_parameter_sets("process").values()
         strategies.sort(key=lambda item: item["weight"])
         strategy = strategies[0]
         name = get_non_conflicting_name("Process #%d",

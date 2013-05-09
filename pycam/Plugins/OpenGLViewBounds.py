@@ -31,9 +31,9 @@ class OpenGLViewBounds(pycam.Plugins.PluginBase):
     def setup(self):
         import OpenGL.GL
         self._GL = OpenGL.GL
-        self.core.get("register_color")("color_bounding_box", "Bounding box",
+        self.core.register_color("color_bounding_box", "Bounding box",
                 40)
-        self.core.get("register_display_item")("show_bounding_box",
+        self.core.register_display_item("show_bounding_box",
                 "Show Bounding Box", 40)
         self.core.register_chain("get_draw_dimension", self.get_draw_dimension)
         self.core.register_event("visualize-items", self.draw_bounds)
@@ -44,8 +44,8 @@ class OpenGLViewBounds(pycam.Plugins.PluginBase):
         self.core.unregister_event("visualize-items", self.draw_bounds)
         self.core.unregister_chain("get_draw_dimension",
                 self.get_draw_dimension)
-        self.core.get("unregister_color")("color_bounding_box")
-        self.core.get("unregister_display_item")("show_bounding_box")
+        self.core.unregister_color("color_bounding_box")
+        self.core.unregister_display_item("show_bounding_box")
         self.core.emit_event("visual-item-updated")
 
     def get_draw_dimension(self, low, high):

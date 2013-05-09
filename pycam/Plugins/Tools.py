@@ -70,7 +70,7 @@ class Tools(pycam.Plugins.ListPluginBase):
                 parameters_box.pack_start(frame, expand=True)
             self.core.register_ui_section("tool_parameters",
                     add_parameter_widget, clear_parameter_widgets)
-            self.core.get("register_parameter_group")("tool",
+            self.core.register_parameter_group("tool",
                     changed_set_event="tool-shape-changed",
                     changed_set_list_event="tool-shape-list-changed",
                     get_current_set_func=self._get_shape)
@@ -183,7 +183,7 @@ class Tools(pycam.Plugins.ListPluginBase):
             tool["id"] = new_value
 
     def _get_shape(self, name=None):
-        shapes = self.core.get("get_parameter_sets")("tool")
+        shapes = self.core.get_parameter_sets("tool")
         if name is None:
             # find the currently selected one
             selector = self.gui.get_object("ToolShapeSelector")
@@ -212,7 +212,7 @@ class Tools(pycam.Plugins.ListPluginBase):
         selected = self._get_shape()
         model = self.gui.get_object("ToolShapeList")
         model.clear()
-        shapes = self.core.get("get_parameter_sets")("tool").values()
+        shapes = self.core.get_parameter_sets("tool").values()
         shapes.sort(key=lambda item: item["weight"])
         for shape in shapes:
             model.append((shape["label"], shape["name"]))
@@ -244,7 +244,7 @@ class Tools(pycam.Plugins.ListPluginBase):
         else:
             tool["shape"] = shape["name"]
             parameters = tool["parameters"]
-            parameters.update(self.core.get("get_parameter_values")("tool"))
+            parameters.update(self.core.get_parameter_values("tool"))
             control_box.show()
             self._trigger_table_update()
 
@@ -259,7 +259,7 @@ class Tools(pycam.Plugins.ListPluginBase):
             shape_name = tool["shape"]
             self.select_shape(shape_name)
             shape = self._get_shape(shape_name)
-            self.core.get("set_parameter_values")("tool", tool["parameters"])
+            self.core.set_parameter_values("tool", tool["parameters"])
             control_box.show()
             self.core.unblock_event("tool-shape-changed")
             self.core.unblock_event("tool-changed")
@@ -275,7 +275,7 @@ class Tools(pycam.Plugins.ListPluginBase):
         return (tool_id, "Tool #%d" % tool_id)
         
     def _tool_new(self, *args):
-        shapes = self.core.get("get_parameter_sets")("tool").values()
+        shapes = self.core.get_parameter_sets("tool").values()
         shapes.sort(key=lambda item: item["weight"])
         shape = shapes[0]
         tool_id, tool_name = self._get_new_tool_id_and_name()

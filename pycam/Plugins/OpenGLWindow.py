@@ -73,6 +73,10 @@ class OpenGLWindow(pycam.Plugins.PluginBase):
 
     UI_FILE = "opengl.ui"
     CATEGORIES = ["Visualization", "OpenGL"]
+    CORE_METHODS = ["register_color",
+                    "unregister_color",
+                    "register_display_item",
+                    "unregister_display_item"]
 
     def setup(self):
         if not GL_ENABLED:
@@ -82,7 +86,7 @@ class OpenGLWindow(pycam.Plugins.PluginBase):
         if self.gui:
             self.context_menu = gtk.Menu()
             self.window = self.gui.get_object("OpenGLWindow")
-            self.core.get("configure-drag-drop-func")(self.window)
+            self.core.configure_drag_drop_func(self.window)
             self.initialized = False
             self.busy = False
             self.is_visible = False
@@ -90,6 +94,7 @@ class OpenGLWindow(pycam.Plugins.PluginBase):
             self._position = [200, 200]
             box = self.gui.get_object("OpenGLPrefTab")
             self.core.register_ui("preferences", "OpenGL", box, 40)
+            self.register_core_methods()
             self._gtk_handlers = []
             # options
             # TODO: move the default value somewhere else
@@ -130,29 +135,24 @@ class OpenGLWindow(pycam.Plugins.PluginBase):
             color_frame.unparent()
             self._color_settings = {}
             self.core.register_ui("preferences", "Colors", color_frame, 30)
-            self.core.set("register_color", self.register_color_setting)
-            self.core.set("unregister_color", self.unregister_color_setting)
             # TODO: move "cutter" and "material" to simulation viewer
             for name, label, weight in (
                     ("color_background", "Background", 10),
                     ("color_cutter", "Tool", 50),
                     ("color_material", "Material", 80)):
-                self.core.get("register_color")(name, label, weight)
+                self.core.register_color(name, label, weight)
             # display items
             items_frame = self.gui.get_object("DisplayItemsPrefTab")
             items_frame.unparent()
             self._display_items = {}
             self.core.register_ui("preferences", "Display Items", items_frame,
                     20)
-            self.core.set("register_display_item", self.register_display_item)
-            self.core.set("unregister_display_item",
-                    self.unregister_display_item)
             # visual and general settings
             # TODO: move drill and directions to a separate plugin
             for name, label, weight in (
                     ("show_drill", "Show Tool", 70),
                     ("show_directions", "Show Directions", 80)):
-                self.core.get("register_display_item")(name, label, weight)
+                self.core.register_display_item(name, label, weight)
             # toggle window state
             toggle_3d = self.gui.get_object("Toggle3DView")
             self._gtk_handlers.append((toggle_3d, "toggled",
@@ -233,9 +233,9 @@ class OpenGLWindow(pycam.Plugins.PluginBase):
             self.core.unregister_ui("view_menu", toggle_3d)
             self.unregister_gtk_accelerator("opengl", toggle_3d)
             for name in ("color_background", "color_cutter", "color_material"):
-                self.core.get("unregister_color")(name)
+                self.core.unregister_color(name)
             for name in ("show_drill", "show_directions"):
-                self.core.get("unregister_display_item")(name)
+                self.core.unregister_display_item(name)
             self.unregister_gtk_handlers(self._gtk_handlers)
             self.unregister_event_handlers(self._event_handlers)
             # the area will be created during setup again
@@ -311,7 +311,7 @@ class OpenGLWindow(pycam.Plugins.PluginBase):
         toolbar.show_all()
         self.context_menu.show_all()
     
-    def register_color_setting(self, name, label, weight=100):
+    def register_color(self, name, label, weight=100):
         if name in self._color_settings:
             self.log.debug("Tried to register color '%s' twice" % name)
             return
@@ -343,7 +343,7 @@ class OpenGLWindow(pycam.Plugins.PluginBase):
         self.register_state_item("settings/view/colors/%s" % name, *wrappers)
         self._rebuild_color_settings()
 
-    def unregister_color_setting(self, name):
+    def unregister_color(self, name):
         if not name in self._color_settings:
             self.log.debug("Failed to unregister unknown color item: %s" % name)
             return
