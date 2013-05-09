@@ -141,7 +141,7 @@ def show_gui(inputfile=None, task_settings_file=None):
 
     # load task settings file
     if not task_settings_file is None:
-        gui.open_task_settings_file(task_settings_file)
+        gui.load_task_settings(task_settings_file)
 
     # tell the GUI to empty the "undo" queue
     gui.finish_startup()

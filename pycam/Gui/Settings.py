@@ -80,13 +80,27 @@ class Settings(dict):
         self.__getitem_orig(key)[self.VALUE_INDEX] = None
 
     def set(self, key, value):
-        self[key] = value
+        self.__setitem__(key,value)
 
     def get(self, key, default=None):
         try:
             return self.__getitem__(key)
         except KeyError:
             return default
+
+    def setclosure(self, key):
+        def c(value):
+            log.info("setclosure:  setting key %s to value %s" %
+                     (key,value))
+            self.set(key,value)
+        return c
+
+    def getclosure(self, key):
+        def c():
+            log.info("getting key %s: value %s" %
+                     (key,self.get(key)))
+            return self.get(key)
+        return c
 
     def define_get_func(self, key, get_func=None):
         if not self.has_key(key):

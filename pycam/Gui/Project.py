@@ -478,12 +478,10 @@ class ProjectGui(object):
             general_prefs.pack_start(item, expand=False, padding=3)
         self.settings.register_ui_section("preferences_general",
                 add_general_prefs_item, clear_general_prefs)
-        for obj_name, priority in (("SettingEnableODE", 10),
-                ("TaskSettingsDefaultFileBox", 30)):
-            obj = self.gui.get_object(obj_name)
-            obj.unparent()
-            self.settings.register_ui("preferences_general", None,
-                    obj, priority)
+        obj = self.gui.get_object("SettingEnableODE")
+        obj.unparent()
+        self.settings.register_ui("preferences_general", None,
+                                  obj, 10)
         # set defaults
         self.cutter = None
         # add some dummies - to be implemented later ...
@@ -620,8 +618,7 @@ class ProjectGui(object):
         # some more initialization
         self.reset_preferences()
         self.load_preferences()
-        # TODO: task settings are not loaded until the new format is stable
-        #self.load_task_settings()
+        self.load_task_settings()
         self.settings.register_event("notify-file-saved",
                 self.add_to_recent_file_list)
         self.settings.register_event("notify-file-opened",
@@ -824,6 +821,11 @@ class ProjectGui(object):
             config_file.close()
         except IOError, err_msg:
             log.warn("Failed to write preferences file (%s): %s" % (config_filename, err_msg))
+
+    def load_task_settings(self,filename=None):
+        """ Load task settings from the StatusManager plugin """
+        smplugin = self.plugin_manager.get_plugin('StatusManager')
+        smplugin.load_task_settings(filename)
 
     def destroy(self, widget=None, data=None):
         gtk.main_quit()

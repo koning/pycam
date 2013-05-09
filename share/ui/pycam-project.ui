@@ -109,6 +109,7 @@
                             <property name="position">0</property>
                           </packing>
                         </child>
+			<!--
                         <child>
                           <object class="GtkVBox" id="TaskSettingsDefaultFileBox">
                             <property name="visible">True</property>
@@ -148,6 +149,7 @@
                             <property name="position">1</property>
                           </packing>
                         </child>
+			-->
                       </object>
                     </child>
                   </object>
