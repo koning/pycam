@@ -26,8 +26,8 @@ import gtk
 
 import pycam.Plugins
 from pycam.Utils.locations import get_ui_file_location
-from pycam.Utils.Persistence import Persistence, PersistenceException, \
-    CONFIG_FILENAME_FILTER
+from pycam.Utils.Persistence import Persistence, PersistenceException
+
 
 
 class StatusManager(pycam.Plugins.PluginBase):
@@ -54,6 +54,9 @@ class StatusManager(pycam.Plugins.PluginBase):
         ]
     PERSIST_GENERAL_PREFERENCES = \
         {'general' : [ "default_task_settings_file" ]}
+    CONFIG_FILENAME_FILTER = (
+        ("Config files", "*.conf"),
+        )
 
     def setup(self):
         self._types = {}
@@ -66,23 +69,31 @@ class StatusManager(pycam.Plugins.PluginBase):
             # autoload task settings file on startup
             autoload_enable = self.gui.get_object("AutoLoadTaskFile")
             autoload_box = self.gui.get_object("StartupTaskFileBox")
-            autoload_source = self.gui.get_object("StartupTaskFile")
-            # TODO: fix the extension filter
-            #for one_filter in get_filters_from_list(CONFIG_FILENAME_FILTER):
-            #    autoload_source.add_filter(one_filter)
-            #    autoload_source.set_filter(one_filter)
+            autoload_source = self.core.get_filechooserbutton(
+                "Choose custom task settings file loading on startup",
+                mode_load=True, type_filter=self.CONFIG_FILENAME_FILTER,
+                parent=self.core.get("main_window"))
+            autoload_box.add(autoload_source)
+            autoload_source.show()
             def get_autoload_task_file(autoload_source=autoload_source):
                 if autoload_enable.get_active():
-                    return autoload_source.get_filename()
+                    # FIXME for some reason, get_filename doesn't work
+                    # at the point the startup task file is loaded;
+                    # however, it does start working later.  The
+                    # initial set_filename works fine, so this hack
+                    # gets the startup task file loaded even if it's
+                    # ugly.
+                    #
+                    # return autoload_source.get_filename()
+                    return autoload_source.get_filename() or \
+                        dict(self.core)["default_task_settings_file"][2]
                 else:
-                    return ""
+                    return None
             def set_autoload_task_file(filename):
                 if filename:
                     autoload_enable.set_active(True)
                     autoload_box.show()
                     autoload_source.set_filename(filename)
-                    self.log.info("set_autoload_task_file:  set %s; read %s" %
-                                  (filename, autoload_source.get_filename()))
                 else:
                     autoload_enable.set_active(False)
                     autoload_box.hide()
@@ -97,7 +108,8 @@ class StatusManager(pycam.Plugins.PluginBase):
             self.core.add_item("default_task_settings_file",
                     get_autoload_task_file, set_autoload_task_file)
             # Settings menu items
-            # FIXME This stuff REALLY needs to go into another (Persistence?) class
+            # FIXME This stuff REALLY needs to go into another
+            # (Persistence?) class
             self.last_task_settings_file = None
             actiongroup = gtk.ActionGroup("task_settings")
             for objname, callback, accel_key, data in (
@@ -123,6 +135,7 @@ class StatusManager(pycam.Plugins.PluginBase):
         self.persistence = Persistence()
         self.register_core_methods()
         return True
+
 
     def teardown(self):
         if self.gui:
@@ -152,7 +165,7 @@ class StatusManager(pycam.Plugins.PluginBase):
                 filename = self.core.get_filename(
                     "Load task settings ...",
                     mode_load=True,
-                    type_filter=CONFIG_FILENAME_FILTER)
+                    type_filter=self.CONFIG_FILENAME_FILTER)
                 # Only update the last_task_settings attribute if the task
                 # file was loaded interactively, i.e. ignore the initial
                 # task file loading.
@@ -196,8 +209,8 @@ class StatusManager(pycam.Plugins.PluginBase):
             if not no_widget and (filename is None or not str(filename)):
                 # open a file chooser dialog if no filename specified
                 filename = self.core.get_filename(
-                    "Save task settings ...", False, CONFIG_FILENAME_FILTER,
-                    self.last_task_settings_file)
+                    "Save task settings ...", False,
+                    self.CONFIG_FILENAME_FILTER, self.last_task_settings_file)
                 # Only update the last_task_settings attribute if the task
                 # file was loaded interactively, i.e. ignore the initial
                 # task file loading.

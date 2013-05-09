@@ -11,11 +11,6 @@ MODEL_FILENAME_FILTER = (
     ("PS contours", ("*.eps", "*.ps")),
     )
 
-CONFIG_FILENAME_FILTER = (
-    ("Config files", "*.conf"),
-    )
-
-
 class PersistenceException(Exception):
     """
     Exception class for the Persistence module
