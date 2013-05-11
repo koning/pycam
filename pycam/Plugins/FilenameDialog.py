@@ -100,7 +100,6 @@ class RecentManager(pycam.Plugins.PluginBase):
 
             uimanager = self.core.get("gtk-uimanager")
             gtkmenu_file = get_ui_file_location(self.GTKMENU_FILE)
-            self.log.debug('gtkmenu_file:  %s' % gtkmenu_file)
             self.ui_merge_id = uimanager.add_ui_from_file(gtkmenu_file)
 
 
