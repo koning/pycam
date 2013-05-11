@@ -650,6 +650,10 @@ class ListPluginBase(PluginBase, list):
         if what is not 'PERSIST_TASK_SETTINGS':
             # ListPluginBase only returns task settings, nothing else
             return {}
+        if not getattr(self.CHILD_ENTITY,'PERSIST',False):
+            # Persistence is not set up or disabled
+            self.log.debug('type(CHILD_ENTITY) %s' % str(self.CHILD_ENTITY))
+            return {}
         return {self.name :
                     [obj.get_persist_data() for obj in self]}
 
@@ -675,6 +679,7 @@ class ObjectWithAttributes(dict):
     # map of uuid to objects for plugins that refer to other plugin
     # entities
     uuid_map = {}
+    PERSIST = True
 
     def __init__(self, core=None, attributes=None, **kwargs):
         super(ObjectWithAttributes, self).__init__(**kwargs)
@@ -701,6 +706,8 @@ class ObjectWithAttributes(dict):
 
     def get_persist_data(self):
         """ Return a copy with only generic types to simplify pickling """
+        if not self.PERSIST:
+            return {}
         dict_copy = self.copy()
         if 'parameters' not in self:
             return dict_copy

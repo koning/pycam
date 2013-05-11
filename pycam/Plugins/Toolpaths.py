@@ -29,6 +29,7 @@ from pycam.Utils import get_non_conflicting_name
 class ToolpathEntity(pycam.Toolpath.Toolpath,
         pycam.Plugins.ObjectWithAttributes):
 
+    PERSIST = False
     node_key = 'Toolpath'
 
 class Toolpaths(pycam.Plugins.ListPluginBase):
@@ -169,11 +170,3 @@ class Toolpaths(pycam.Plugins.ListPluginBase):
         new_tp = ToolpathEntity(toolpath_path=moves, attributes=attributes,
                 toolpath_filters=filters)
         self.append(new_tp)
-
-    def get_persist_data(self, what=None):
-        """ Not saving data for now"""
-        return {}
-
-    def set_persist_data(self, what, data):
-        """ Not restoring data for now """
-        pass
