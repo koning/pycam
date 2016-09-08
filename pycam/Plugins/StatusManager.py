@@ -46,6 +46,7 @@ class StatusManager(pycam.Plugins.PluginBase):
     UI_FILE = "task_settings.ui"
     CATEGORIES = ["System"]
     GTKMENU_FILE = "task_settings_ui.xml"
+    DEPENDS = ["FilenameDialog"]
     CORE_METHODS = [
         'load_general_preferences',
         'save_general_preferences',
