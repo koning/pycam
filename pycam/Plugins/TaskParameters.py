@@ -34,7 +34,7 @@ class TaskParamCollisionModels(pycam.Plugins.PluginBase):
         self.control = pycam.Gui.ControlsGTK.InputTable([],
                 change_handler=lambda widget=None: \
                     self.core.emit_event("task-changed"))
-        self.control.get_widget().set_size_request(240, -1)
+        self.control.get_widget().set_size_request(240, 120)
         self.core.register_parameter("task", "collision_models",
                 self.control)
         self.core.register_ui("task_models", "", self.control.get_widget(),
