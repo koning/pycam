@@ -33,6 +33,9 @@ from struct import unpack
 import StringIO
 import re
 
+import time
+from stl import mesh
+
 log = pycam.Utils.log.get_logger()
 
 
@@ -59,6 +62,10 @@ def ImportModel(filename, use_kdtree=True, callback=None, **kwargs):
     kdtree = None
 
     normal_conflict_warning_seen = False
+    
+    time_start = time.time()
+    
+    loaded_mesh = mesh.Mesh.from_file(filename)
 
     if hasattr(filename, "read"):
         # make sure that the input stream can seek and has ".len"
@@ -119,6 +126,7 @@ def ImportModel(filename, use_kdtree=True, callback=None, **kwargs):
     p3 = None
 
     if binary:
+        print 'binary'
         for i in range(1, numfacets + 1): 
             if callback and callback():
                 log.warn("STLImporter: load model operation cancelled")
@@ -178,6 +186,7 @@ def ImportModel(filename, use_kdtree=True, callback=None, **kwargs):
 
             model.append(t)
     else:
+        print 'other'
         solid = re.compile(r"\s*solid\s+(\w+)\s+.*")
         endsolid = re.compile(r"\s*endsolid\s*")
         facet = re.compile(r"\s*facet\s*")
@@ -194,8 +203,65 @@ def ImportModel(filename, use_kdtree=True, callback=None, **kwargs):
                 + r"\s+(?P<z>[-+]?(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?)\s+")
 
         current_line = 0
+        facet_num = 0
+        
+        if True:
+            for FACET in loaded_mesh.data:
+                # All needed values now loaded for this facet
+                #    proceed with processing
+                current_vectors = loaded_mesh.vectors[facet_num]
+                current_normal = loaded_mesh.normals[facet_num]
+                facet_num += 1
+                
+                n = (FACET[0][0], FACET[0][1], FACET[0][2], 'v')
+                p1 = (FACET[1][0][0], FACET[1][0][1], FACET[1][0][2])
+                p2 = (FACET[1][1][0], FACET[1][1][1], FACET[1][1][2])
+                p3 = (FACET[1][2][0], FACET[1][2][1], FACET[1][2][2])
+                
+                if p1 is None or p2 is None or p3 is None:
+                    log.warn(("Invalid facet definition in line " \
+                            + "%d of '%s'. Please validate the STL file!") \
+                            % (current_line, filename))
+                    n, p1, p2, p3 = None, None, None, None
+                    
+                if not n:
+                    n = pnormalized(pcross(psub(p2, p1), psub(p3, p1)))
+                
+                # validate the normal
+                # The three vertices of a triangle in an STL file are supposed
+                # to be in counter-clockwise order. This should match the
+                # direction of the normal.
+                if n is None:
+                    # invalid triangle (zero-length vector)
+                    dotcross = 0
+                else:
+                    # make sure the points are in ClockWise order
+                    dotcross = pdot(n, pcross(psub(p2,p1), psub(p3, p1)))
+                if dotcross > 0:
+                    # Triangle expects the vertices in clockwise order
+                    t = Triangle(p1, p3, p2, n)
+                elif dotcross < 0:
+                    if not normal_conflict_warning_seen:
+                        log.warn(("Inconsistent normal/vertices found in " + \
+                                "line %d of '%s'. Please validate the STL " + \
+                                "file!") % (current_line, filename))
+                        normal_conflict_warning_seen = True
+                    t = Triangle(p1, p2, p3, n)
+                else:
+                    # The three points are in a line - or two points are
+                    # identical. Usually this is caused by points, that are too
+                    # close together. Check the tolerance value in
+                    # pycam/Geometry/PointKdtree.py.
+                    log.warn("Skipping invalid triangle: %s / %s / %s " \
+                            % (p1, p2, p3) + "(maybe the resolution of the " \
+                            + "model is too high?)")
+                    n, p1, p2, p3 = (None, None, None, None)
+                    
+                n, p1, p2, p3 = (None, None, None, None)
+                model.append(t)
 
-        for line in f:
+        f2 = []
+        for line in f2:
             if callback and callback():
                 log.warn("STLImporter: load model operation cancelled")
                 return None
@@ -235,6 +301,17 @@ def ImportModel(filename, use_kdtree=True, callback=None, **kwargs):
                 continue
             m = endfacet.match(line)
             if m:
+                # All needed values now loaded for this facet
+                #    proceed with processing
+                current_vectors = loaded_mesh.vectors[facet_num]
+                current_normal = loaded_mesh.normals[facet_num]
+                facet_num += 1
+                
+                n = (current_normal[0], current_normal[1], current_normal[2], 'v')
+                p1 = (current_vectors[0][0], current_vectors[0][1], current_vectors[0][2])
+                p2 = (current_vectors[1][0], current_vectors[1][1], current_vectors[1][2])
+                p3 = (current_vectors[2][0], current_vectors[2][1], current_vectors[2][2])
+                
                 if p1 is None or p2 is None or p3 is None:
                     log.warn(("Invalid facet definition in line " \
                             + "%d of '%s'. Please validate the STL file!") \
@@ -243,7 +320,7 @@ def ImportModel(filename, use_kdtree=True, callback=None, **kwargs):
                     continue
                 if not n:
                     n = pnormalized(pcross(psub(p2, p1), psub(p3, p1)))
-
+                
                 # validate the normal
                 # The three vertices of a triangle in an STL file are supposed
                 # to be in counter-clockwise order. This should match the
@@ -257,6 +334,9 @@ def ImportModel(filename, use_kdtree=True, callback=None, **kwargs):
                 if dotcross > 0:
                     # Triangle expects the vertices in clockwise order
                     t = Triangle(p1, p3, p2, n)
+                    print p1, p3, p2
+                    print loaded_mesh.vectors[facet_num-1]
+                    print
                 elif dotcross < 0:
                     if not normal_conflict_warning_seen:
                         log.warn(("Inconsistent normal/vertices found in " + \
@@ -281,8 +361,10 @@ def ImportModel(filename, use_kdtree=True, callback=None, **kwargs):
             if m:
                 continue
 
-    log.info("Imported STL model: %d vertices, %d edges, %d triangles" \
-            % (vertices, edges, len(model.triangles())))
+    print type(model)
+    time_end = time.time()
+    log.info("Imported STL model: %d vertices, %d edges, %d triangles in %.4fs" \
+            % (vertices, edges, len(model.triangles()), time_end - time_start))
     vertices = 0
     edges = 0
     kdtree = None

@@ -578,7 +578,7 @@ class ProjectGui(object):
 
         # fallback - in case of a failure when opening a model file
         model = pycam.Importers.TestModel.get_test_model()
-        self.settings.get("models").add_model(model, "Tiny pyramid")
+        #self.settings.get("models").add_model(model, "Tiny pyramid")
         # Without this "gkt.main_iteration" loop the task settings file
         # control would not be updated in time.
         while gtk.events_pending():

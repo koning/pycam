@@ -130,14 +130,16 @@ def show_gui(inputfile=None, task_settings_file=None):
     gui = gui_class()
 
     # load the given model or the default
-    if not inputfile:
+    if inputfile:
+        gui.load_model_file(filename=inputfile)
+    #elif True:
+    #    pass
+    else:
         default_model = get_default_model()
         if isinstance(default_model, (basestring, pycam.Utils.URIHandler)):
             gui.load_model_file(filename=default_model, store_filename=False)
         else:
             gui.load_model(default_model)
-    else:
-        gui.load_model_file(filename=inputfile)
 
     # load task settings file
     if not task_settings_file is None:
