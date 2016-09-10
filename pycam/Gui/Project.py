@@ -782,6 +782,8 @@ class ProjectGui(object):
 
     @gui_activity_guard
     def load_model_file(self, widget=None, filename=None, store_filename=True):
+        import time
+        sTime = time.time()
         if callable(filename):
             filename = filename()
         if not filename:
@@ -806,6 +808,7 @@ class ProjectGui(object):
                 else:
                     result = False
                 progress.finish()
+                print 'Model Rendered in %.4f seconds.' % (time.time()-sTime)
                 return result
             else:
                 log.error("Failed to detect filetype!")

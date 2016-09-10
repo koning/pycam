@@ -63,7 +63,7 @@ def ImportModel(filename, use_kdtree=True, callback=None, **kwargs):
 
     normal_conflict_warning_seen = False
     
-    time_start = time.time()
+    sTime = time.time()
     
     loaded_mesh = mesh.Mesh.from_file(filename)
 
@@ -126,7 +126,6 @@ def ImportModel(filename, use_kdtree=True, callback=None, **kwargs):
     p3 = None
 
     if binary:
-        print 'binary'
         for i in range(1, numfacets + 1): 
             if callback and callback():
                 log.warn("STLImporter: load model operation cancelled")
@@ -186,7 +185,6 @@ def ImportModel(filename, use_kdtree=True, callback=None, **kwargs):
 
             model.append(t)
     else:
-        print 'other'
         solid = re.compile(r"\s*solid\s+(\w+)\s+.*")
         endsolid = re.compile(r"\s*endsolid\s*")
         facet = re.compile(r"\s*facet\s*")
@@ -361,10 +359,9 @@ def ImportModel(filename, use_kdtree=True, callback=None, **kwargs):
             if m:
                 continue
 
-    print type(model)
     time_end = time.time()
-    log.info("Imported STL model: %d vertices, %d edges, %d triangles in %.4fs" \
-            % (vertices, edges, len(model.triangles()), time_end - time_start))
+    log.info("Imported STL model: %d vertices, %d edges, %d triangles in %.4f seconds." \
+            % (vertices, edges, len(model.triangles()), time.time() - sTime))
     vertices = 0
     edges = 0
     kdtree = None
