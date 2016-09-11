@@ -783,7 +783,6 @@ class ProjectGui(object):
     @gui_activity_guard
     def load_model_file(self, widget=None, filename=None, store_filename=True):
         import time
-        sTime = time.time()
         if callable(filename):
             filename = filename()
         if not filename:
@@ -792,6 +791,7 @@ class ProjectGui(object):
         if filename:
             file_type, importer = pycam.Importers.detect_file_type(filename)
             if file_type and callable(importer):
+                sTime = time.time()
                 progress = self.settings.get("progress")
                 progress.update(text="Loading model ...")
                 # "cancel" is not allowed
